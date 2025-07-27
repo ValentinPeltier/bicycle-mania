@@ -1,0 +1,6 @@
+IndentWidth: 4
+AccessModifierOffset: 0
+IndentAccessModifiers: true
+AllowShortFunctionsOnASingleLine: None
+IndentPPDirectives: BeforeHash
+ColumnLimit: 120
