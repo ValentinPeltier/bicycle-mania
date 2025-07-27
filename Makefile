@@ -1,11 +1,11 @@
 ## Variables
 
-SRC_DIR = src
+SOURCE_DIR = src
 BUILD_DIR = build
 SHADERS_DIR = shaders
 BIN_FILE = $(BUILD_DIR)/out
 
-SOURCE_FILES = $(shell find $(SRC_DIR) -type f -name "*.cpp")
+SOURCE_FILES = $(shell find $(SOURCE_DIR) -type f -name "*.cpp")
 OBJ_FILES = $(patsubst %,$(BUILD_DIR)/%.o,$(basename $(SOURCE_FILES)))
 DEP_FILES = $(patsubst %,$(BUILD_DIR)/%.d,$(basename $(SOURCE_FILES)))
 VERTEX_SPV_FILES = $(patsubst %.vert, $(BUILD_DIR)/%.vert.spv, $(shell find $(SHADERS_DIR) -type f -name "*.vert"))
@@ -14,7 +14,7 @@ FRAGMENT_SPV_FILES = $(patsubst %.frag, $(BUILD_DIR)/%.frag.spv, $(shell find $(
 # C++ compiler
 CXX = clang++
 # C++ compiler flags
-CXXFLAGS = -std=c++23 -g -Wall -Wextra -O0 -I./libs -MP -MD
+CXXFLAGS = -std=c++23 -g -Wall -Wextra -O0 -MP -MD
 # Pre-processor flags
 CPPFLAGS =
 # Linker
@@ -35,7 +35,7 @@ run:
 
 .PHONY: clean
 clean:
-	rm -rf $(BUILD_DIR)/$(SRC_DIR)
+	rm -rf $(BUILD_DIR)/$(SOURCE_DIR)
 	rm -rf $(BUILD_DIR)/$(SHADERS_DIR)
 
 ## File targets
