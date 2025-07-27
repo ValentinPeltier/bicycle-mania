@@ -4,3 +4,7 @@ IndentAccessModifiers: true
 AllowShortFunctionsOnASingleLine: None
 IndentPPDirectives: BeforeHash
 ColumnLimit: 120
+AlwaysBreakTemplateDeclarations: Yes
+PackConstructorInitializers: Never
+BreakBeforeTernaryOperators: true
+AlignAfterOpenBracket: DontAlign
