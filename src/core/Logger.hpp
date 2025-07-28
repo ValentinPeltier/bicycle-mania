@@ -16,7 +16,7 @@ class Logger {
         static std::string buildMessage(std::string message, const std::initializer_list<std::string> &values) noexcept;
 
     public:
-        void setFormat(const std::string &format) noexcept;
+        static void setFormat(const std::string &format) noexcept;
         static void info(const std::string &message, const std::initializer_list<std::string> &values = {}) noexcept;
         static void error(const std::string &message, const std::initializer_list<std::string> &values = {}) noexcept;
 };
