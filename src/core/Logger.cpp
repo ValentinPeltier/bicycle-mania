@@ -84,6 +84,12 @@ void Logger::setFormat(const std::string &format) noexcept {
     Logger::format = format;
 }
 
+void Logger::debug(const std::string &message, const std::initializer_list<std::string> &values) noexcept {
+    auto builtMessage = Logger::buildMessage(message, values);
+    auto parameters = Logger::buildParameters("DEBUG", builtMessage);
+    std::cout << Logger::replace(Logger::format, parameters) << std::endl;
+}
+
 void Logger::info(const std::string &message, const std::initializer_list<std::string> &values) noexcept {
     auto builtMessage = Logger::buildMessage(message, values);
     auto parameters = Logger::buildParameters("INFO", builtMessage);

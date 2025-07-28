@@ -17,9 +17,11 @@ class Logger {
 
     public:
         static void setFormat(const std::string &format) noexcept;
+        static void debug(const std::string &message, const std::initializer_list<std::string> &values = {}) noexcept;
         static void info(const std::string &message, const std::initializer_list<std::string> &values = {}) noexcept;
         static void error(const std::string &message, const std::initializer_list<std::string> &values = {}) noexcept;
 };
 
+#define LOG_DEBUG(...) Logger::debug(__VA_ARGS__)
 #define LOG_INFO(...) Logger::info(__VA_ARGS__)
 #define LOG_ERROR(...) Logger::error(__VA_ARGS__)
