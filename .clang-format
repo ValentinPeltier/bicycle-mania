@@ -8,3 +8,4 @@ AlwaysBreakTemplateDeclarations: Yes
 PackConstructorInitializers: Never
 BreakBeforeTernaryOperators: true
 AlignAfterOpenBracket: DontAlign
+IndentCaseLabels: true

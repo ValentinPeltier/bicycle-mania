@@ -1,5 +1,5 @@
 #include "Entity.hpp"
-#include "../core/Logger.hpp"
+#include "core/Logger.hpp"
 #include <memory>
 #include <stdexcept>
 #include <string>

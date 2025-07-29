@@ -9,7 +9,7 @@ project "GameTest"
     language "C++"
     files { "src/**.hpp", "src/**.cpp" }
     location "build"
-    includedirs { "include" }
+    includedirs { "src" }
     cppdialect "C++23"
 
     filter { "configurations:Debug" }

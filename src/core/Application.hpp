@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../game/Entity.hpp"
+#include "game/Entity.hpp"
 #include <memory>
 
 class Application {

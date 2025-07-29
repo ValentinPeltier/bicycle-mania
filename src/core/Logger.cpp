@@ -96,6 +96,12 @@ void Logger::info(const std::string &message, const std::initializer_list<std::s
     std::cout << Logger::replace(Logger::format, parameters) << std::endl;
 }
 
+void Logger::warning(const std::string &message, const std::initializer_list<std::string> &values) noexcept {
+    auto builtMessage = Logger::buildMessage(message, values);
+    auto parameters = Logger::buildParameters("WARNING", builtMessage);
+    std::cerr << Logger::replace(Logger::format, parameters) << std::endl;
+}
+
 void Logger::error(const std::string &message, const std::initializer_list<std::string> &values) noexcept {
     auto builtMessage = Logger::buildMessage(message, values);
     auto parameters = Logger::buildParameters("ERROR", builtMessage);

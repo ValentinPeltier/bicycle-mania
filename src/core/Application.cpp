@@ -4,13 +4,13 @@
 
 Application::Application()
     : rootEntity(std::make_shared<Entity>("root")) {
-    LOG_INFO("Application starting.");
+    LOG_DEBUG("Application starting.");
 }
 
 Application::~Application() {
-    LOG_INFO("Application exiting.");
+    LOG_DEBUG("Application exiting.");
 }
 
 void Application::run() {
-    LOG_INFO("Application running.");
+    LOG_DEBUG("Application running.");
 }
