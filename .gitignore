@@ -1,5 +1,10 @@
 # Build
-build/
+bin/
+obj/
+Makefile
+*.make
+/*.sln
+*.vcxproj*
 
 # Clangd
 .cache/clangd/
