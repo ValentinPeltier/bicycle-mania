@@ -1,9 +1,11 @@
 #include "Application.hpp"
 #include "Logger.hpp"
+#include "graphics/displayers/Window.hpp"
 #include <memory>
 
 Application::Application()
-    : rootEntity(std::make_shared<Entity>("root")) {
+    : window(std::make_unique<Window>("My Windowww")),
+      rootEntity(std::make_shared<Entity>("root")) {
     LOG_DEBUG("Application starting.");
 }
 
@@ -13,4 +15,7 @@ Application::~Application() {
 
 void Application::run() {
     LOG_DEBUG("Application running.");
+    while (!this->window->shouldClose()) {
+        this->window->update();
+    }
 }
