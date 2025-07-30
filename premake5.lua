@@ -1,4 +1,4 @@
-require ".premake/ecc/ecc"
+require "vendor/premake-ecc/ecc"
 
 workspace "GameTest"
     configurations { "Debug", "Release" }
@@ -9,7 +9,10 @@ project "GameTest"
     language "C++"
     cppdialect "C++23"
     files { "src/**.hpp", "src/**.cpp" }
-    includedirs { "src" }
+    includedirs {
+        "src",
+        "vendor/glm",
+    }
 
     outputDir = "%{cfg.system}-%{cfg.architecture}-%{cfg.buildcfg:lower()}"
     targetdir ("bin/" .. outputDir)
@@ -23,6 +26,7 @@ project "GameTest"
         }
 
     filter "system:linux"
+        toolset "clang"
         links {
             "vulkan",
             "glfw", "dl", "pthread", "X11", "Xxf86vm", "Xrandr", "Xi",

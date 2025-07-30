@@ -10,8 +10,19 @@ This project use Premake to generate build configuration files for your preferre
 
 - [Premake 5.0](https://premake.github.io/download)
 - [Vulkan SDK 1.4](https://vulkan.lunarg.com/sdk/home)
-- [GLM 1.0](https://glm.g-truc.net)
 - [GLFW 3.4](https://www.glfw.org)
+
+### Download
+
+> Some dependencies are included in the repository as Git submodules.
+> It includes:
+> - GLM 1.0
+> - Premake "ECC" module
+>
+> If you do not want to use them as such, you can download them and place them in the `vendor/` directory.
+
+- Clone with submodules: `git clone --recurse-submodules git@github.com:ValentinPeltier/game-test.git`
+- Or once you have the repository, you can download the submodules with `git submodule update --init --recursive`
 
 ### Build
 
