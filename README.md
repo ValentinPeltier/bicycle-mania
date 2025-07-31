@@ -1,3 +1,7 @@
+# Bicycle Mania
+
+Bicycle Mania is an open-world game where you can buy bicycles, upgrade your components, improve your stats and win races 🍾
+
 ## Installation
 
 *No release is available yet, you will have to compile it.*
@@ -21,7 +25,7 @@ This project use Premake to generate build configuration files for your preferre
 >
 > If you do not want to use them as such, you can download them and place them in the `vendor/` directory.
 
-- Clone with submodules: `git clone --recurse-submodules git@github.com:ValentinPeltier/game-test.git`
+- Clone with submodules: `git clone --recurse-submodules git@github.com:ValentinPeltier/bicycle-mania.git`
 - Or once you have the repository, you can download the submodules with `git submodule update --init --recursive`
 
 ### Build

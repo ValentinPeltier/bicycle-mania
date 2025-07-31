@@ -1,10 +1,10 @@
 require "vendor/premake-ecc/ecc"
 
-workspace "GameTest"
+workspace "Bicycle Mania"
     configurations { "Debug", "Release" }
     architecture "x86_64"
 
-project "GameTest"
+project "Bicycle Mania"
     kind "ConsoleApp"
     language "C++"
     cppdialect "C++23"
