@@ -1,24 +1,20 @@
 #pragma once
 
-#include "graphics/engines/Engine.hpp"
+#include "render/engines/RenderEngine.hpp"
 #include <vector>
 #include <vulkan/vk_platform.h>
 #include <vulkan/vulkan_core.h>
 
-class VulkanEngine : public Engine {
+class VulkanEngine : public RenderEngine {
     public:
         VulkanEngine();
         ~VulkanEngine() override;
-        void draw() const override;
 
     private:
         VkInstance instance = VK_NULL_HANDLE;
         VkDebugUtilsMessengerEXT validationLayerMessenger = VK_NULL_HANDLE;
         VkDevice device = VK_NULL_HANDLE;
 
-        std::vector<const char *> validationLayers = {
-            "VK_LAYER_KHRONOS_validation",
-        };
 #ifdef DEBUG
         const bool enableValidationLayers = true;
 #else
@@ -26,9 +22,11 @@ class VulkanEngine : public Engine {
 #endif
 
         VkInstance createInstance() const;
-        std::vector<const char *> getRequiredExtensions() const noexcept;
+        std::vector<VkExtensionProperties> getAvailableExtensions() const;
+        std::vector<const char *> getExtensions() const;
+        std::vector<VkLayerProperties> getAvailableLayers() const;
+        std::vector<const char *> getLayers() const;
 
-        bool hasValidationLayersSupport() const noexcept;
         VkDebugUtilsMessengerEXT createValidationLayerMessenger() const;
         VkDebugUtilsMessengerCreateInfoEXT getValidationLayerMessengerCreateInfo() const noexcept;
         static VKAPI_ATTR VkBool32 VKAPI_CALL validationLayerMessageCallback(

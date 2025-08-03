@@ -2,7 +2,7 @@
 #include "core/Logger.hpp"
 #include "extensions.hpp"
 #include <GLFW/glfw3.h>
-#include <cstring>
+#include <iostream>
 #include <stdexcept>
 
 VulkanEngine::VulkanEngine() {
@@ -25,30 +25,13 @@ VulkanEngine::~VulkanEngine() {
     LOG_DEBUG("Vulkan engine cleaned up.");
 }
 
-void VulkanEngine::draw() const {
-}
-
 // ------------------ //
 // --- Instance --- //
 // ------------------ //
 
 VkInstance VulkanEngine::createInstance() const {
-    // Get required extensions
-    auto extensions = this->getRequiredExtensions();
-
-    // Get available extensions
-    uint32_t availableExtensionCount;
-    vkEnumerateInstanceExtensionProperties(nullptr, &availableExtensionCount, nullptr);
-    std::vector<VkExtensionProperties> availableExtensions(availableExtensionCount);
-    vkEnumerateInstanceExtensionProperties(nullptr, &availableExtensionCount, availableExtensions.data());
-
-    LOG_DEBUG("Available extensions: ");
-    for (auto &availableExtension : availableExtensions) {
-        LOG_DEBUG(std::string("  - ") + availableExtension.extensionName);
-    }
-
     // Create a VkInstance
-    VkApplicationInfo applicationInfo = {};
+    VkApplicationInfo applicationInfo{};
     applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     applicationInfo.pApplicationName = "GameTest";
     applicationInfo.applicationVersion = VK_MAKE_VERSION(0, 1, 0);
@@ -56,22 +39,20 @@ VkInstance VulkanEngine::createInstance() const {
     applicationInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
     applicationInfo.apiVersion = VK_API_VERSION_1_4;
 
-    VkInstanceCreateInfo instanceCreateInfo = {};
+    auto extensions = this->getExtensions();
+    auto instanceLayers = this->getLayers();
+
+    VkInstanceCreateInfo instanceCreateInfo{};
     instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     instanceCreateInfo.pApplicationInfo = &applicationInfo;
-    instanceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+    instanceCreateInfo.enabledExtensionCount = extensions.size();
     instanceCreateInfo.ppEnabledExtensionNames = extensions.data();
-    instanceCreateInfo.enabledLayerCount = 0;
+    instanceCreateInfo.enabledLayerCount = instanceLayers.size();
+    instanceCreateInfo.ppEnabledLayerNames = instanceLayers.data();
 
-    // Add validation layers
-    VkDebugUtilsMessengerCreateInfoEXT validationLayerMessengerCreateInfo;
+    // Add validation layer for the instance creation itself
+    VkDebugUtilsMessengerCreateInfoEXT validationLayerMessengerCreateInfo{};
     if (this->enableValidationLayers) {
-        if (!this->hasValidationLayersSupport()) {
-            throw std::runtime_error("Validation layers are not available.");
-        }
-
-        instanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(this->validationLayers.size());
-        instanceCreateInfo.ppEnabledLayerNames = this->validationLayers.data();
         validationLayerMessengerCreateInfo = this->getValidationLayerMessengerCreateInfo();
         instanceCreateInfo.pNext = &validationLayerMessengerCreateInfo;
     }
@@ -84,62 +65,96 @@ VkInstance VulkanEngine::createInstance() const {
     return instance;
 }
 
-std::vector<const char *> VulkanEngine::getRequiredExtensions() const noexcept {
-    std::vector<const char *> extensions(0);
+std::vector<VkExtensionProperties> VulkanEngine::getAvailableExtensions() const {
+    uint32_t availableExtensionCount;
+    if (vkEnumerateInstanceExtensionProperties(nullptr, &availableExtensionCount, nullptr) != VK_SUCCESS) {
+        throw std::runtime_error("Unable to get the available extensions.");
+    }
+    std::vector<VkExtensionProperties> availableExtensions(availableExtensionCount);
+    if (vkEnumerateInstanceExtensionProperties(nullptr, &availableExtensionCount, availableExtensions.data()) !=
+        VK_SUCCESS) {
+        throw std::runtime_error("Unable to get the available extensions.");
+    }
+
+    return availableExtensions;
+}
+
+std::vector<const char *> VulkanEngine::getExtensions() const {
+    std::vector<const char *> extensions{};
 
     // Add GLFW extensions
     uint32_t glfwExtensionCount;
-    const char **glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-    extensions.insert(extensions.end(), glfwExtensions, glfwExtensions + glfwExtensionCount);
+    auto glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    for (int i = 0; i < glfwExtensionCount; i++) {
+        extensions.push_back(glfwExtensions[i]);
+    }
 
-    // Add extension for the message callback of validation layers
+    // Add extension for the validation layers message callback
     if (this->enableValidationLayers) {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
 
-    LOG_DEBUG("Required extensions:");
-    for (auto &extension : extensions) {
-        LOG_DEBUG(std::string("  - ") + extension);
+#ifdef DEBUG
+    LOG_DEBUG("Available extensions: ");
+    for (VkExtensionProperties &availableExtension : this->getAvailableExtensions()) {
+        std::string availableExtensionName = static_cast<std::string>(availableExtension.extensionName);
+        bool isUsed = false;
+        for (auto &extension : extensions) {
+            if (extension == availableExtensionName) {
+                isUsed = true;
+                break;
+            }
+        }
+        LOG_DEBUG(std::string("  - ") + (isUsed ? "(used) " : "") + availableExtensionName);
     }
+#endif
 
     return extensions;
+}
+
+std::vector<VkLayerProperties> VulkanEngine::getAvailableLayers() const {
+    uint32_t availableLayerCount;
+    if (vkEnumerateInstanceLayerProperties(&availableLayerCount, nullptr) != VK_SUCCESS) {
+        throw std::runtime_error("Unable to get the available layers.");
+    }
+    std::vector<VkLayerProperties> availableLayers(availableLayerCount);
+    if (vkEnumerateInstanceLayerProperties(&availableLayerCount, availableLayers.data()) != VK_SUCCESS) {
+        throw std::runtime_error("Unable to get the available layers.");
+    }
+
+    return availableLayers;
+}
+
+std::vector<const char *> VulkanEngine::getLayers() const {
+    std::vector<const char *> layers{};
+
+    if (this->enableValidationLayers) {
+        layers.push_back("VK_LAYER_KHRONOS_validation");
+    }
+
+#ifdef DEBUG
+    LOG_DEBUG("Available layers: ");
+    for (VkLayerProperties &availableLayer : this->getAvailableLayers()) {
+        std::string availableLayerName = static_cast<std::string>(availableLayer.layerName);
+        bool isUsed = false;
+        for (auto &layer : layers) {
+            if (layer == availableLayerName) {
+                isUsed = true;
+                break;
+            }
+        }
+        LOG_DEBUG(std::string("  - ") + (isUsed ? "(used) " : "") + availableLayerName);
+    }
+#endif
+
+    return layers;
 }
 
 // ------------------------- //
 // --- Validation layers --- //
 // ------------------------- //
 
-bool VulkanEngine::hasValidationLayersSupport() const noexcept {
-    // Enumerate layer properties
-    uint32_t availableLayerCount;
-    vkEnumerateInstanceLayerProperties(&availableLayerCount, nullptr);
-    std::vector<VkLayerProperties> availableLayers(availableLayerCount);
-    vkEnumerateInstanceLayerProperties(&availableLayerCount, availableLayers.data());
-
-    // Check that all layers are available
-    for (const char *layerName : this->validationLayers) {
-        bool layerFound = false;
-
-        for (const auto &layerProperties : availableLayers) {
-            if (std::strcmp(layerName, layerProperties.layerName) == 0) {
-                layerFound = true;
-                break;
-            }
-        }
-
-        if (!layerFound) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
 VkDebugUtilsMessengerEXT VulkanEngine::createValidationLayerMessenger() const {
-    if (!this->hasValidationLayersSupport()) {
-        throw std::runtime_error("Validation layers are not available.");
-    }
-
     VkDebugUtilsMessengerCreateInfoEXT createInfo = this->getValidationLayerMessengerCreateInfo();
 
     VkDebugUtilsMessengerEXT validationLayerMessenger = VK_NULL_HANDLE;
@@ -151,7 +166,7 @@ VkDebugUtilsMessengerEXT VulkanEngine::createValidationLayerMessenger() const {
 }
 
 VkDebugUtilsMessengerCreateInfoEXT VulkanEngine::getValidationLayerMessengerCreateInfo() const noexcept {
-    VkDebugUtilsMessengerCreateInfoEXT createInfo = {};
+    VkDebugUtilsMessengerCreateInfoEXT createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     createInfo.messageSeverity =
         VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
@@ -185,7 +200,7 @@ VkDevice VulkanEngine::createDevice() const {
     VkPhysicalDevice physicalDevice = this->getPreferredPhysicalDevice();
 
     // Create a VkDevice
-    VkDeviceCreateInfo deviceCreateInfo = {};
+    VkDeviceCreateInfo deviceCreateInfo{};
     deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
     VkDevice device = VK_NULL_HANDLE;
@@ -231,17 +246,14 @@ VkPhysicalDevice VulkanEngine::getPreferredPhysicalDevice() const {
     // Rate the physical devices
     // Use an ordered map to automatically sort candidates by increasing score
     std::multimap<uint32_t, VkPhysicalDevice> physicalDevicesByScore;
-    LOG_DEBUG("Available physical devices:");
     for (const auto &physicalDevice : physicalDevices) {
         // Get the physical device properties
-        VkPhysicalDeviceProperties properties = {};
+        VkPhysicalDeviceProperties properties{};
         vkGetPhysicalDeviceProperties(physicalDevice, &properties);
 
         // Rate it
         uint32_t score = this->ratePhysicalDevice(properties);
         physicalDevicesByScore.insert(std::make_pair(score, physicalDevice));
-
-        LOG_DEBUG(std::string("  - ") + properties.deviceName + ": score " + std::to_string(score));
     }
 
     // If the best physical device is not suitable
@@ -249,6 +261,23 @@ VkPhysicalDevice VulkanEngine::getPreferredPhysicalDevice() const {
         throw std::runtime_error("No suitable physical device.");
     }
 
+    auto chosenDevice = physicalDevicesByScore.rbegin()->second;
+
+#ifdef DEBUG
+    LOG_DEBUG("Available physical devices:");
+    for (auto physicalDeviceByScore : physicalDevicesByScore) {
+        auto score = physicalDeviceByScore.first;
+        auto physicalDevice = physicalDeviceByScore.second;
+        bool isUsed = physicalDevice == chosenDevice;
+
+        VkPhysicalDeviceProperties properties{};
+        vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+        LOG_DEBUG(std::string("  - ") + (isUsed ? "(used) " : "") + "(score: " + std::to_string(score) + ") " +
+                  properties.deviceName);
+    }
+#endif
+
     // Return the best physical device
-    return physicalDevicesByScore.rbegin()->second;
+    return chosenDevice;
 }
