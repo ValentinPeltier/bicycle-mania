@@ -16,5 +16,5 @@ class Device {
          * @return uint32_t `0` means that the physical device is not suitable for the engine.
          */
         uint32_t ratePhysicalDevice(VkPhysicalDeviceProperties properties) const noexcept;
-        VkPhysicalDevice getPreferredPhysicalDevice() const;
+        VkPhysicalDevice getBestPhysicalDevice() const;
 };

@@ -1,6 +1,6 @@
 #include "Application.hpp"
 #include "game/Entity.hpp"
-#include "render/engines/vulkan/VulkanEngine.hpp"
+#include "render/engines/RenderEngine.hpp"
 #include <GLFW/glfw3.h>
 #include <csignal>
 #include <memory>
@@ -15,7 +15,7 @@ Application::Application() {
     // GLFW
     glfwInit();
 
-    this->renderEngine = std::make_unique<VulkanEngine>();
+    this->renderEngine = std::move(RenderEngine::getBest());
     this->rootEntity = std::make_shared<Entity>("root");
 }
 

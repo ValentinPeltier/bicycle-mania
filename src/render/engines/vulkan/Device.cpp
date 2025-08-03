@@ -7,7 +7,7 @@
 Device::Device(const Instance &instance)
     : instance(instance) {
     // Choose the physical device
-    VkPhysicalDevice physicalDevice = this->getPreferredPhysicalDevice();
+    VkPhysicalDevice physicalDevice = this->getBestPhysicalDevice();
 
     // Create a VkDevice
     VkDeviceCreateInfo deviceCreateInfo{};
@@ -48,7 +48,7 @@ uint32_t Device::ratePhysicalDevice(VkPhysicalDeviceProperties properties) const
     return score;
 }
 
-VkPhysicalDevice Device::getPreferredPhysicalDevice() const {
+VkPhysicalDevice Device::getBestPhysicalDevice() const {
     // Enumerate physical devices
     uint32_t deviceCount;
     vkEnumeratePhysicalDevices(this->instance.get(), &deviceCount, nullptr);
