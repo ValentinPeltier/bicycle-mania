@@ -1,17 +1,13 @@
 #include "Entity.hpp"
-#include "core/Logger.hpp"
 #include <memory>
 #include <stdexcept>
 #include <string>
 
 Entity::Entity(const std::string &name) {
     this->setName(name);
-
-    LOG_DEBUG("Entity " + this->getFullName() + " created.");
 }
 
 Entity::~Entity() {
-    LOG_DEBUG("Entity " + this->getFullName() + " deleted.");
 }
 
 const std::string &Entity::getName() const noexcept {
@@ -49,8 +45,6 @@ void Entity::setParent(const std::shared_ptr<Entity> &parent) {
 
     this->parent = parent;
     parent->children.push_back(this->shared_from_this());
-
-    LOG_DEBUG("Entity " + previousFullName + " is now " + this->getFullName());
 }
 
 bool Entity::hasChildren() const noexcept {
@@ -70,6 +64,4 @@ void Entity::addChild(const std::shared_ptr<Entity> &child) {
 
     this->children.push_back(child);
     child->parent = this->shared_from_this();
-
-    LOG_DEBUG("Entity " + previousFullName + " is now " + child->getFullName());
 }

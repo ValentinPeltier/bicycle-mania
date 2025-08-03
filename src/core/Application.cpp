@@ -1,15 +1,18 @@
 #include "Application.hpp"
-#include "Logger.hpp"
 #include "game/Entity.hpp"
 #include "render/engines/vulkan/VulkanEngine.hpp"
 #include <GLFW/glfw3.h>
+#include <csignal>
 #include <memory>
-#include <string>
 #include <unistd.h>
 
-Application::Application() {
-    LOG_DEBUG("Application starting.");
+bool Application::sigint = false;
 
+Application::Application() {
+    // Signal handlers
+    std::signal(SIGINT, Application::sigintCallback);
+
+    // GLFW
     glfwInit();
 
     this->renderEngine = std::make_unique<VulkanEngine>();
@@ -17,15 +20,16 @@ Application::Application() {
 }
 
 Application::~Application() {
-    LOG_DEBUG("Application exiting.");
-
+    // GLFW
     glfwTerminate();
 }
 
-void Application::run() {
-    LOG_DEBUG("Application running.");
+void Application::sigintCallback(int signal) {
+    Application::sigint = true;
+}
 
-    while (true) {
+void Application::run() {
+    while (!Application::sigint) {
         glfwPollEvents();
     }
 }

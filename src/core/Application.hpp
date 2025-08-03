@@ -10,7 +10,11 @@ class Application {
         ~Application();
         void run();
 
+        static void sigintCallback(int signal);
+
     private:
         std::unique_ptr<RenderEngine> renderEngine;
         std::shared_ptr<Entity> rootEntity;
+
+        static bool sigint;
 };
