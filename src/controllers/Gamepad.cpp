@@ -70,7 +70,7 @@ void Gamepad::connectionCallback(int id, int event) {
 }
 
 void Gamepad::initialize() {
-    if (glfwUpdateGamepadMappings(File(Path("assets/gamecontrollerdb.txt")).read().c_str()) != GLFW_TRUE) {
+    if (glfwUpdateGamepadMappings(File(Path("resources/gamecontrollerdb.txt")).read().c_str()) != GLFW_TRUE) {
         LOG_ERROR("Failed to update gamepad mappings.");
     }
 
