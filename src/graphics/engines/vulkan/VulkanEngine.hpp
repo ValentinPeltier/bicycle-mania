@@ -14,6 +14,7 @@ class VulkanEngine : public Engine {
     private:
         VkInstance instance = VK_NULL_HANDLE;
         VkDebugUtilsMessengerEXT validationLayerMessenger = VK_NULL_HANDLE;
+        VkDevice device = VK_NULL_HANDLE;
 
         std::vector<const char *> validationLayers = {
             "VK_LAYER_KHRONOS_validation",
@@ -33,4 +34,11 @@ class VulkanEngine : public Engine {
         static VKAPI_ATTR VkBool32 VKAPI_CALL validationLayerMessageCallback(
             VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType,
             const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData) noexcept;
+
+        VkDevice createDevice() const;
+        /**
+         * @return uint32_t `0` means that the physical device is not suitable for the engine.
+         */
+        uint32_t ratePhysicalDevice(VkPhysicalDeviceProperties properties) const noexcept;
+        VkPhysicalDevice getPreferredPhysicalDevice() const;
 };

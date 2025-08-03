@@ -12,10 +12,13 @@ VulkanEngine::VulkanEngine() {
         this->validationLayerMessenger = this->createValidationLayerMessenger();
     }
 
+    this->device = this->createDevice();
+
     LOG_DEBUG("Vulkan engine set up!");
 }
 
 VulkanEngine::~VulkanEngine() {
+    vkDestroyDevice(this->device, nullptr);
     vkDestroyDebugUtilsMessengerEXT(this->instance, this->validationLayerMessenger, nullptr);
     vkDestroyInstance(this->instance, nullptr);
 
@@ -171,4 +174,81 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanEngine::validationLayerMessageCallback(
     }
 
     return VK_FALSE;
+}
+
+// -------------- //
+// --- Device --- //
+// -------------- //
+
+VkDevice VulkanEngine::createDevice() const {
+    // Choose the physical device
+    VkPhysicalDevice physicalDevice = this->getPreferredPhysicalDevice();
+
+    // Create a VkDevice
+    VkDeviceCreateInfo deviceCreateInfo = {};
+    deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+
+    VkDevice device = VK_NULL_HANDLE;
+    if (vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create Vulkan device.");
+    }
+
+    return device;
+}
+
+uint32_t VulkanEngine::ratePhysicalDevice(VkPhysicalDeviceProperties properties) const noexcept {
+    uint32_t score = 0;
+
+    // Prefer GPUs
+    switch (properties.deviceType) {
+        case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
+            score += 1000;
+            break;
+        case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
+        case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
+            score += 200;
+            break;
+        default:
+            break;
+    }
+
+    // Maximum possible size of textures affects graphics quality
+    score += (int)(properties.limits.maxImageDimension2D / 1000);
+
+    return score;
+}
+
+VkPhysicalDevice VulkanEngine::getPreferredPhysicalDevice() const {
+    // Enumerate physical devices
+    uint32_t physicalDeviceCount;
+    vkEnumeratePhysicalDevices(this->instance, &physicalDeviceCount, nullptr);
+    if (physicalDeviceCount == 0) {
+        throw std::runtime_error("No physical device available.");
+    }
+    std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
+    vkEnumeratePhysicalDevices(this->instance, &physicalDeviceCount, physicalDevices.data());
+
+    // Rate the physical devices
+    // Use an ordered map to automatically sort candidates by increasing score
+    std::multimap<uint32_t, VkPhysicalDevice> physicalDevicesByScore;
+    LOG_DEBUG("Available physical devices:");
+    for (const auto &physicalDevice : physicalDevices) {
+        // Get the physical device properties
+        VkPhysicalDeviceProperties properties = {};
+        vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+        // Rate it
+        uint32_t score = this->ratePhysicalDevice(properties);
+        physicalDevicesByScore.insert(std::make_pair(score, physicalDevice));
+
+        LOG_DEBUG(std::string("  - ") + properties.deviceName + ": score " + std::to_string(score));
+    }
+
+    // If the best physical device is not suitable
+    if (physicalDevicesByScore.rbegin()->first == 0) {
+        throw std::runtime_error("No suitable physical device.");
+    }
+
+    // Return the best physical device
+    return physicalDevicesByScore.rbegin()->second;
 }
