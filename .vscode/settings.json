@@ -1,4 +1,0 @@
-{
-    "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
-    "makefile.configureOnOpen": false,
-}
