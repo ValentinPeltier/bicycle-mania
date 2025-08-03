@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+
 class Path {
     public:
         Path(const std::string &path);

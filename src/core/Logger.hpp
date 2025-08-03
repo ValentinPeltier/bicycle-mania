@@ -5,6 +5,13 @@
 #include <string>
 
 class Logger {
+    public:
+        static void setFormat(const std::string &format) noexcept;
+        static void debug(const std::string &message, const std::initializer_list<std::string> &values = {}) noexcept;
+        static void info(const std::string &message, const std::initializer_list<std::string> &values = {}) noexcept;
+        static void warning(const std::string &message, const std::initializer_list<std::string> &values = {}) noexcept;
+        static void error(const std::string &message, const std::initializer_list<std::string> &values = {}) noexcept;
+
     private:
         static std::string format;
 
@@ -14,13 +21,6 @@ class Logger {
         static std::string formatDatePart(const int &value, const unsigned int &length) noexcept;
         static std::string replace(std::string text, const std::map<std::string, std::string> &parameters) noexcept;
         static std::string buildMessage(std::string message, const std::initializer_list<std::string> &values) noexcept;
-
-    public:
-        static void setFormat(const std::string &format) noexcept;
-        static void debug(const std::string &message, const std::initializer_list<std::string> &values = {}) noexcept;
-        static void info(const std::string &message, const std::initializer_list<std::string> &values = {}) noexcept;
-        static void warning(const std::string &message, const std::initializer_list<std::string> &values = {}) noexcept;
-        static void error(const std::string &message, const std::initializer_list<std::string> &values = {}) noexcept;
 };
 
 #define LOG_DEBUG(...) ::Logger::debug(__VA_ARGS__)

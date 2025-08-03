@@ -7,6 +7,36 @@
 
 std::string Logger::format = "%Y/%m/%d %H:%M:%S [%l] %t";
 
+void Logger::setFormat(const std::string &format) noexcept {
+    Logger::format = format;
+}
+
+void Logger::debug(const std::string &message, const std::initializer_list<std::string> &values) noexcept {
+#ifdef DEBUG
+    auto builtMessage = Logger::buildMessage(message, values);
+    auto parameters = Logger::buildParameters("DEBUG", builtMessage);
+    std::cout << Logger::replace(Logger::format, parameters) << std::endl;
+#endif
+}
+
+void Logger::info(const std::string &message, const std::initializer_list<std::string> &values) noexcept {
+    auto builtMessage = Logger::buildMessage(message, values);
+    auto parameters = Logger::buildParameters("INFO", builtMessage);
+    std::cout << Logger::replace(Logger::format, parameters) << std::endl;
+}
+
+void Logger::warning(const std::string &message, const std::initializer_list<std::string> &values) noexcept {
+    auto builtMessage = Logger::buildMessage(message, values);
+    auto parameters = Logger::buildParameters("WARNING", builtMessage);
+    std::cerr << Logger::replace(Logger::format, parameters) << std::endl;
+}
+
+void Logger::error(const std::string &message, const std::initializer_list<std::string> &values) noexcept {
+    auto builtMessage = Logger::buildMessage(message, values);
+    auto parameters = Logger::buildParameters("ERROR", builtMessage);
+    std::cerr << Logger::replace(Logger::format, parameters) << std::endl;
+}
+
 std::map<std::string, std::string> Logger::buildParameters(
     const std::string &level, const std::string &message) noexcept {
     std::time_t timestamp = std::time(nullptr);
@@ -78,32 +108,4 @@ std::string Logger::buildMessage(std::string message, const std::initializer_lis
     }
 
     return message;
-}
-
-void Logger::setFormat(const std::string &format) noexcept {
-    Logger::format = format;
-}
-
-void Logger::debug(const std::string &message, const std::initializer_list<std::string> &values) noexcept {
-    auto builtMessage = Logger::buildMessage(message, values);
-    auto parameters = Logger::buildParameters("DEBUG", builtMessage);
-    std::cout << Logger::replace(Logger::format, parameters) << std::endl;
-}
-
-void Logger::info(const std::string &message, const std::initializer_list<std::string> &values) noexcept {
-    auto builtMessage = Logger::buildMessage(message, values);
-    auto parameters = Logger::buildParameters("INFO", builtMessage);
-    std::cout << Logger::replace(Logger::format, parameters) << std::endl;
-}
-
-void Logger::warning(const std::string &message, const std::initializer_list<std::string> &values) noexcept {
-    auto builtMessage = Logger::buildMessage(message, values);
-    auto parameters = Logger::buildParameters("WARNING", builtMessage);
-    std::cerr << Logger::replace(Logger::format, parameters) << std::endl;
-}
-
-void Logger::error(const std::string &message, const std::initializer_list<std::string> &values) noexcept {
-    auto builtMessage = Logger::buildMessage(message, values);
-    auto parameters = Logger::buildParameters("ERROR", builtMessage);
-    std::cerr << Logger::replace(Logger::format, parameters) << std::endl;
 }

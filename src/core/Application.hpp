@@ -5,12 +5,12 @@
 #include <memory>
 
 class Application {
-    private:
-        std::unique_ptr<RenderEngine> renderEngine;
-        std::shared_ptr<Entity> rootEntity;
-
     public:
         Application();
         ~Application();
         void run();
+
+    private:
+        std::unique_ptr<RenderEngine> renderEngine;
+        std::shared_ptr<Entity> rootEntity;
 };
