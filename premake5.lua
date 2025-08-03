@@ -1,10 +1,10 @@
 require "vendor/premake-ecc/ecc"
 
-workspace "Bicycle Mania"
+workspace "Bicycle_Mania"
     configurations { "Debug", "Release" }
     architecture "x86_64"
 
-project "Bicycle Mania"
+project "Bicycle_Mania"
     kind "ConsoleApp"
     language "C++"
     cppdialect "C++23"
@@ -17,8 +17,10 @@ project "Bicycle Mania"
     outputDir = "%{cfg.system}-%{cfg.architecture}-%{cfg.buildcfg:lower()}"
     targetdir ("bin/" .. outputDir)
     objdir ("obj/" .. outputDir)
+    postbuildcommands ("{COPYDIR} assets bin/" .. outputDir .. "/assets")
 
     filter "system:windows"
+        defines { "OS_WINDOWS" }
         systemversion "latest"
         links {
             "vulkan-1",
@@ -26,6 +28,7 @@ project "Bicycle Mania"
         }
 
     filter "system:linux"
+        defines { "OS_LINUX" }
         toolset "clang"
         links {
             "vulkan",

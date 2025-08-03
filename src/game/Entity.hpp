@@ -8,7 +8,7 @@ class Entity : public std::enable_shared_from_this<Entity> {
     private:
         std::unique_ptr<std::string> name;
         std::shared_ptr<Entity> parent = nullptr;
-        std::vector<std::weak_ptr<Entity>> children = {};
+        std::vector<std::weak_ptr<Entity>> children{};
 
     public:
         Entity(const std::string &name);
