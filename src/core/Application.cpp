@@ -1,12 +1,14 @@
 #include "Application.hpp"
 #include "Logger.hpp"
+#include "graphics/engines/vulkan/VulkanEngine.hpp"
 #include <GLFW/glfw3.h>
 #include <memory>
 #include <string>
 #include <unistd.h>
 
 Application::Application()
-    : rootEntity(std::make_shared<Entity>("root")) {
+    : engine(std::make_unique<VulkanEngine>()),
+      rootEntity(std::make_shared<Entity>("root")) {
     LOG_DEBUG("Application starting.");
     glfwInit();
 }
