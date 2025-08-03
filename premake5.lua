@@ -17,6 +17,7 @@ project "Bicycle_Mania"
     outputDir = "%{cfg.system}-%{cfg.architecture}-%{cfg.buildcfg:lower()}"
     targetdir ("bin/" .. outputDir)
     objdir ("obj/" .. outputDir)
+    postbuildcommands ("{COPYDIR} assets bin/" .. outputDir .. "/assets")
 
     filter "system:windows"
         defines { "OS_WINDOWS" }
