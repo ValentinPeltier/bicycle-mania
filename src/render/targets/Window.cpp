@@ -1,17 +1,16 @@
 #include "Window.hpp"
-#include "core/Logger.hpp"
 #include <GLFW/glfw3.h>
+#include <cstdint>
 #include <stdexcept>
+#include <string>
 
-int Window::windowCount = 0;
+uint32_t Window::windowCount = 0;
 
-Window::Window(const char *title) {
+Window::Window(const std::string title) {
     if (Window::windowCount == 0) {
         if (glfwInit() == GLFW_FALSE) {
             throw std::runtime_error("Error while initializing GLFW.");
         }
-
-        LOG_DEBUG("GLFW set up.");
     }
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -19,27 +18,28 @@ Window::Window(const char *title) {
     glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
     glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
 
-    this->window = glfwCreateWindow(this->defaultWidth, this->defaultHeight, title, nullptr, nullptr);
+    this->window = glfwCreateWindow(this->defaultWidth, this->defaultHeight, title.c_str(), nullptr, nullptr);
     ++Window::windowCount;
-    LOG_DEBUG("Window created.");
 }
 
 Window::~Window() {
     glfwDestroyWindow(this->window);
-    LOG_DEBUG("Window destroyed.");
 
     // Once all windows are destroyed, terminate GLFW
     if (--Window::windowCount <= 0) {
         glfwTerminate();
-        LOG_DEBUG("GLFW cleaned up.");
     }
 }
 
-void Window::setTitle(const char *title) const {
-    glfwSetWindowTitle(this->window, title);
+GLFWwindow *Window::getGLFWWindow() const noexcept {
+    return this->window;
 }
 
-void Window::setDefaultSize(int defaultWidth, int defaultHeight) {
+void Window::setTitle(const std::string title) const {
+    glfwSetWindowTitle(this->window, title.c_str());
+}
+
+void Window::setDefaultSize(uint32_t defaultWidth, uint32_t defaultHeight) {
     this->defaultWidth = defaultWidth;
     this->defaultHeight = defaultHeight;
 }
