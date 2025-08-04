@@ -3,6 +3,10 @@
 #include <GLFW/glfw3.h>
 #include <stdexcept>
 
+#ifdef DEBUG
+    #define ENABLE_VALIDATION_LAYERS
+#endif
+
 Instance::Instance() {
     // Create a VkInstance
     VkApplicationInfo applicationInfo{};
@@ -24,20 +28,20 @@ Instance::Instance() {
     instanceCreateInfo.enabledLayerCount = instanceLayers.size();
     instanceCreateInfo.ppEnabledLayerNames = instanceLayers.data();
 
+#ifdef ENABLE_VALIDATION_LAYERS
     // Add validation layer for the instance creation itself
-    VkDebugUtilsMessengerCreateInfoEXT validationLayerMessengerCreateInfo{};
-    if (this->enableValidationLayers) {
-        validationLayerMessengerCreateInfo = this->getValidationLayerMessengerCreateInfo();
-        instanceCreateInfo.pNext = &validationLayerMessengerCreateInfo;
-    }
+    VkDebugUtilsMessengerCreateInfoEXT validationLayerMessengerCreateInfo =
+        this->getValidationLayerMessengerCreateInfo();
+    instanceCreateInfo.pNext = &validationLayerMessengerCreateInfo;
+#endif
 
     if (vkCreateInstance(&instanceCreateInfo, nullptr, &this->instance) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create Vulkan instance.");
     }
 
-    if (this->enableValidationLayers) {
-        this->validationLayerMessenger = this->createValidationLayerMessenger();
-    }
+#ifdef ENABLE_VALIDATION_LAYERS
+    this->validationLayerMessenger = this->createValidationLayerMessenger();
+#endif
 }
 
 Instance::~Instance() {
@@ -45,7 +49,7 @@ Instance::~Instance() {
     vkDestroyInstance(this->instance, nullptr);
 }
 
-const VkInstance &Instance::get() const noexcept {
+const VkInstance &Instance::getVkInstance() const noexcept {
     return this->instance;
 }
 
@@ -77,10 +81,10 @@ std::vector<const char *> Instance::getExtensions() const {
         extensions.push_back(glfwExtensions[i]);
     }
 
+#ifdef ENABLE_VALIDATION_LAYERS
     // Add extension for the validation layers message callback
-    if (this->enableValidationLayers) {
-        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-    }
+    extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+#endif
 
 #ifdef DEBUG
     LOG_DEBUG("Available extensions: ");
@@ -116,9 +120,9 @@ std::vector<VkLayerProperties> Instance::getAvailableLayers() const {
 std::vector<const char *> Instance::getLayers() const {
     std::vector<const char *> layers{};
 
-    if (this->enableValidationLayers) {
-        layers.push_back("VK_LAYER_KHRONOS_validation");
-    }
+#ifdef ENABLE_VALIDATION_LAYERS
+    layers.push_back("VK_LAYER_KHRONOS_validation");
+#endif
 
 #ifdef DEBUG
     LOG_DEBUG("Available layers: ");

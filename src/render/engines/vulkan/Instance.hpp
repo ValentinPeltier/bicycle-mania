@@ -7,17 +7,11 @@ class Instance {
     public:
         Instance();
         ~Instance();
-        const VkInstance &get() const noexcept;
+        const VkInstance &getVkInstance() const noexcept;
 
     private:
         VkInstance instance = VK_NULL_HANDLE;
         VkDebugUtilsMessengerEXT validationLayerMessenger = VK_NULL_HANDLE;
-
-#ifdef DEBUG
-        bool enableValidationLayers = true;
-#else
-        bool enableValidationLayers = false;
-#endif
 
         std::vector<VkExtensionProperties> getAvailableExtensions() const;
         std::vector<const char *> getExtensions() const;
