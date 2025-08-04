@@ -1,25 +1,19 @@
 #include "Application.hpp"
-#include "Logger.hpp"
-#include <GLFW/glfw3.h>
+#include "render/targets/Window.hpp"
 #include <memory>
 #include <string>
 #include <unistd.h>
 
 Application::Application()
-    : rootEntity(std::make_shared<Entity>("root")) {
-    LOG_DEBUG("Application starting.");
-    glfwInit();
+    : window(std::make_unique<Window>("Bicycle Mania")),
+      rootEntity(std::make_shared<Entity>("root")) {
 }
 
 Application::~Application() {
-    LOG_DEBUG("Application exiting.");
-    glfwTerminate();
 }
 
 void Application::run() {
-    LOG_DEBUG("Application running.");
-
-    while (true) {
-        glfwPollEvents();
+    while (!this->window->shouldClose()) {
+        this->window->update();
     }
 }
