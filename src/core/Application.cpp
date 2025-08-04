@@ -1,6 +1,7 @@
 #include "Application.hpp"
 #include "game/Entity.hpp"
 #include "render/engines/RenderEngine.hpp"
+#include "render/targets/Window.hpp"
 #include <GLFW/glfw3.h>
 #include <csignal>
 #include <memory>
@@ -8,20 +9,15 @@
 
 bool Application::sigint = false;
 
-Application::Application() {
+Application::Application()
+    : window(std::make_unique<Window>("Bicycle Mania")),
+      renderEngine(std::move(RenderEngine::getBest(this->window.get()->getGLFWWindow()))),
+      rootEntity(std::make_shared<Entity>("root")) {
     // Signal handlers
     std::signal(SIGINT, Application::sigintCallback);
-
-    // GLFW
-    glfwInit();
-
-    this->renderEngine = std::move(RenderEngine::getBest());
-    this->rootEntity = std::make_shared<Entity>("root");
 }
 
 Application::~Application() {
-    // GLFW
-    glfwTerminate();
 }
 
 void Application::sigintCallback(int signal) {
@@ -29,7 +25,7 @@ void Application::sigintCallback(int signal) {
 }
 
 void Application::run() {
-    while (!Application::sigint) {
-        glfwPollEvents();
+    while (!Application::sigint && !this->window->shouldClose()) {
+        this->window->update();
     }
 }
