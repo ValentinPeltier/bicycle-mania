@@ -8,6 +8,7 @@ class Surface {
     public:
         Surface(const Instance &instance, const Window &window);
         ~Surface();
+        const VkSurfaceKHR &getVkSurface() const noexcept;
 
     private:
         const Instance &instance;

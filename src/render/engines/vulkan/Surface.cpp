@@ -17,3 +17,7 @@ Surface::Surface(const Instance &instance, const Window &window)
 Surface::~Surface() {
     vkDestroySurfaceKHR(this->instance.getVkInstance(), this->surface, nullptr);
 }
+
+const VkSurfaceKHR &Surface::getVkSurface() const noexcept {
+    return this->surface;
+}

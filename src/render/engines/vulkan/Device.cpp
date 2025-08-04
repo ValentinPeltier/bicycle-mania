@@ -5,13 +5,14 @@
 #include <stdexcept>
 #include <vulkan/vulkan_core.h>
 
-Device::Device(const Instance &instance)
-    : instance(instance) {
+Device::Device(const Instance &instance, const Surface &surface)
+    : instance(instance),
+      surface(surface) {
     // Choose the physical device
     VkPhysicalDevice physicalDevice = this->getBestPhysicalDevice();
 
     // Get the queue create info
-    auto queueCreateInfo = this->getQueueCreateInfo(physicalDevice);
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos = this->getQueueCreateInfo(physicalDevice);
 
     // Get the device features
     VkPhysicalDeviceFeatures physicalDeviceFeatures{};
@@ -19,8 +20,8 @@ Device::Device(const Instance &instance)
     // Create a VkDevice
     VkDeviceCreateInfo deviceCreateInfo{};
     deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    deviceCreateInfo.queueCreateInfoCount = queueCreateInfo.size();
-    deviceCreateInfo.pQueueCreateInfos = queueCreateInfo.data();
+    deviceCreateInfo.queueCreateInfoCount = queueCreateInfos.size();
+    deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
     deviceCreateInfo.pEnabledFeatures = &physicalDeviceFeatures;
     deviceCreateInfo.enabledExtensionCount = 0;
 
@@ -29,8 +30,9 @@ Device::Device(const Instance &instance)
     }
 
     // Retrieve the queues
-    auto queueIndices = Device::getQueueFamilies(physicalDevice);
-    vkGetDeviceQueue(this->device, queueIndices.graphicsFamily.value(), 0, &this->graphicsQueue);
+    QueueFamilyIndices queueFamilyIndices = Device::getQueueFamilies(physicalDevice);
+    vkGetDeviceQueue(this->device, queueFamilyIndices.graphics.value(), 0, &this->graphicsQueue);
+    vkGetDeviceQueue(this->device, queueFamilyIndices.present.value(), 0, &this->presentQueue);
 }
 
 Device::~Device() {
@@ -41,12 +43,12 @@ Device::~Device() {
 // --- Device --- //
 // -------------- //
 
-uint32_t Device::ratePhysicalDevice(VkPhysicalDevice device) noexcept {
+uint32_t Device::ratePhysicalDevice(VkPhysicalDevice device) const noexcept {
     uint32_t score = 0;
 
-    // We need a device with a graphics queue family
-    QueueFamilyIndices queueFamilies = Device::getQueueFamilies(device);
-    if (!queueFamilies.graphicsFamily.has_value()) {
+    // We need a device with a graphics and a present queue families
+    QueueFamilyIndices queueFamilies = this->getQueueFamilies(device);
+    if (!queueFamilies.graphics.has_value() || !queueFamilies.present.has_value()) {
         return 0;
     }
 
@@ -119,7 +121,7 @@ VkPhysicalDevice Device::getBestPhysicalDevice() const {
 // --- Queues --- //
 // -------------- //
 
-QueueFamilyIndices Device::getQueueFamilies(VkPhysicalDevice physicalDevice) {
+QueueFamilyIndices Device::getQueueFamilies(VkPhysicalDevice physicalDevice) const noexcept {
     QueueFamilyIndices indices;
 
     // Get the available queue families
@@ -130,8 +132,16 @@ QueueFamilyIndices Device::getQueueFamilies(VkPhysicalDevice physicalDevice) {
 
     uint32_t index = 0;
     for (auto &queueFamily : queueFamilies) {
+        // Graphics
         if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-            indices.graphicsFamily = index;
+            indices.graphics = index;
+        }
+
+        // Present
+        VkBool32 isPresentSupported;
+        vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, index, this->surface.getVkSurface(), &isPresentSupported);
+        if (isPresentSupported) {
+            indices.present = index;
         }
 
         ++index;
@@ -148,10 +158,19 @@ std::vector<VkDeviceQueueCreateInfo> Device::getQueueCreateInfo(VkPhysicalDevice
     float graphicsQueuePriority = 1.0f;
     VkDeviceQueueCreateInfo graphicsQueueCreateInfo{};
     graphicsQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    graphicsQueueCreateInfo.queueFamilyIndex = familyIndices.graphicsFamily.value();
+    graphicsQueueCreateInfo.queueFamilyIndex = familyIndices.graphics.value();
     graphicsQueueCreateInfo.queueCount = 1;
     graphicsQueueCreateInfo.pQueuePriorities = &graphicsQueuePriority;
     queueCreateInfo.push_back(graphicsQueueCreateInfo);
+
+    // Add present queue
+    float presentQueuePriority = 1.0f;
+    VkDeviceQueueCreateInfo presentQueueCreateInfo{};
+    presentQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    presentQueueCreateInfo.queueFamilyIndex = familyIndices.present.value();
+    presentQueueCreateInfo.queueCount = 1;
+    presentQueueCreateInfo.pQueuePriorities = &presentQueuePriority;
+    queueCreateInfo.push_back(presentQueueCreateInfo);
 
     return queueCreateInfo;
 }

@@ -2,8 +2,8 @@
 
 VulkanEngine::VulkanEngine(const Window &window)
     : instance(),
-      device(this->instance),
-      surface(this->instance, window) {
+      surface(this->instance, window),
+      device(this->instance, this->surface) {
 }
 
 VulkanEngine::~VulkanEngine() {

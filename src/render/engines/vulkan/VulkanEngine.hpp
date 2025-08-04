@@ -13,6 +13,6 @@ class VulkanEngine : public RenderEngine {
 
     private:
         Instance instance;
-        Device device;
         Surface surface;
+        Device device;
 };
