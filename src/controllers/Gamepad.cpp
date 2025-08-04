@@ -1,18 +1,23 @@
 #include "Gamepad.hpp"
+#include "GLFWInitializer.hpp"
 #include "core/File.hpp"
 #include "core/Logger.hpp"
 #include <GLFW/glfw3.h>
 #include <string>
 
-bool Gamepad::initialized = false;
-
 Gamepad::Gamepad(uint32_t id)
     : id(id) {
+    GLFWManager::initialize();
+
     if (!Gamepad::initialized) {
         Gamepad::initialize();
     }
 
     this->updateValues();
+}
+
+Gamepad::~Gamepad() {
+    GLFWManager::terminate();
 }
 
 std::vector<Gamepad> Gamepad::getAll() {
@@ -70,7 +75,7 @@ void Gamepad::connectionCallback(int id, int event) {
 }
 
 void Gamepad::initialize() {
-    if (glfwUpdateGamepadMappings(File(Path("resources/gamecontrollerdb.txt")).read().c_str()) != GLFW_TRUE) {
+    if (glfwUpdateGamepadMappings(File(Path("share/gamecontrollerdb.txt")).read().c_str()) != GLFW_TRUE) {
         LOG_ERROR("Failed to update gamepad mappings.");
     }
 

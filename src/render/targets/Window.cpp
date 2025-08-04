@@ -1,17 +1,11 @@
 #include "Window.hpp"
+#include "GLFWInitializer.hpp"
 #include <GLFW/glfw3.h>
 #include <cstdint>
-#include <stdexcept>
 #include <string>
 
-uint32_t Window::windowCount = 0;
-
 Window::Window(const std::string title) {
-    if (Window::windowCount == 0) {
-        if (glfwInit() == GLFW_FALSE) {
-            throw std::runtime_error("Error while initializing GLFW.");
-        }
-    }
+    GLFWManager::initialize();
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
@@ -19,16 +13,12 @@ Window::Window(const std::string title) {
     glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
 
     this->window = glfwCreateWindow(this->defaultWidth, this->defaultHeight, title.c_str(), nullptr, nullptr);
-    ++Window::windowCount;
 }
 
 Window::~Window() {
     glfwDestroyWindow(this->window);
 
-    // Once all windows are destroyed, terminate GLFW
-    if (--Window::windowCount <= 0) {
-        glfwTerminate();
-    }
+    GLFWManager::terminate();
 }
 
 GLFWwindow *Window::getGLFWWindow() const noexcept {

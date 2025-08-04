@@ -7,6 +7,8 @@
 
 class Gamepad {
     public:
+        ~Gamepad();
+
         static std::vector<Gamepad> getAll();
 
         std::string getGUID() const noexcept;
@@ -42,7 +44,7 @@ class Gamepad {
         static void connectionCallback(int id, int event);
 
     private:
-        static bool initialized;
+        inline static bool initialized = false;
         uint32_t id;
         uint32_t axesCount;
         uint32_t buttonsCount;

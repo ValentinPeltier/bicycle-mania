@@ -4,16 +4,14 @@
 #include "Device.hpp"
 #include "Instance.hpp"
 #include "Surface.hpp"
-#include <GLFW/glfw3.h>
+#include "render/targets/Window.hpp"
 
 class VulkanEngine : public RenderEngine {
     public:
-        VulkanEngine(GLFWwindow *window);
+        VulkanEngine(const Window &window);
         ~VulkanEngine() override;
 
     private:
-        GLFWwindow *window = nullptr;
-
         Instance instance;
         Device device;
         Surface surface;

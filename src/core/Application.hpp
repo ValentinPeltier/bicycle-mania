@@ -18,5 +18,5 @@ class Application {
         std::unique_ptr<RenderEngine> renderEngine;
         std::shared_ptr<Entity> rootEntity;
 
-        static bool sigint;
+        inline static bool sigint = false;
 };

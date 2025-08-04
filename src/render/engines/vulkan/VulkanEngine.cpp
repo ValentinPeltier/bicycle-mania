@@ -1,11 +1,9 @@
 #include "VulkanEngine.hpp"
-#include <GLFW/glfw3.h>
 
-VulkanEngine::VulkanEngine(GLFWwindow *window)
-    : window(window),
-      instance(),
+VulkanEngine::VulkanEngine(const Window &window)
+    : instance(),
       device(this->instance),
-      surface(this->instance, this->window) {
+      surface(this->instance, window) {
 }
 
 VulkanEngine::~VulkanEngine() {

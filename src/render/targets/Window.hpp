@@ -18,7 +18,6 @@ class Window {
         void update() const;
 
     private:
-        static uint32_t windowCount;
         GLFWwindow *window = nullptr;
         uint32_t defaultWidth = 800;
         uint32_t defaultHeight = 600;

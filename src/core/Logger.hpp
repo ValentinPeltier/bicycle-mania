@@ -13,7 +13,7 @@ class Logger {
         static void error(const std::string &message, const std::initializer_list<std::string> &values = {}) noexcept;
 
     private:
-        static std::string format;
+        inline static std::string format = "%Y/%m/%d %H:%M:%S [%l] %t";
 
         Logger();
         static std::map<std::string, std::string> buildParameters(

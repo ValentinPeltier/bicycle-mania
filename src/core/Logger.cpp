@@ -5,8 +5,6 @@
 #include <map>
 #include <string>
 
-std::string Logger::format = "%Y/%m/%d %H:%M:%S [%l] %t";
-
 void Logger::setFormat(const std::string &format) noexcept {
     Logger::format = format;
 }
