@@ -1,6 +1,7 @@
 #include "Device.hpp"
 #include "Instance.hpp"
 #include "core/Logger.hpp"
+#include <algorithm>
 #include <map>
 #include <stdexcept>
 #include <vulkan/vulkan_core.h>
@@ -102,21 +103,12 @@ VkPhysicalDevice Device::getBestPhysicalDevice() const {
 
 uint32_t Device::ratePhysicalDevice(VkPhysicalDevice physicalDevice) const noexcept {
     uint32_t queueFamiliesScore = this->ratePhysicalDeviceQueueFamilies(physicalDevice);
-    if (queueFamiliesScore == 0) {
-        return 0;
-    }
-
     uint32_t extensionsScore = this->ratePhysicalDeviceExtensions(physicalDevice);
-    if (extensionsScore == 0) {
-        return 0;
-    }
-
     uint32_t propertiesScore = this->ratePhysicalDeviceProperties(physicalDevice);
-    if (propertiesScore == 0) {
-        return 0;
-    }
 
-    return queueFamiliesScore + extensionsScore + propertiesScore;
+    return std::min({queueFamiliesScore, extensionsScore, propertiesScore}) == 0
+               ? 0
+               : queueFamiliesScore + extensionsScore + propertiesScore;
 }
 
 uint32_t Device::ratePhysicalDeviceQueueFamilies(VkPhysicalDevice physicalDevice) const noexcept {
@@ -140,7 +132,7 @@ uint32_t Device::ratePhysicalDeviceExtensions(VkPhysicalDevice physicalDevice) c
     auto extensions = this->getAvailableExtensions(physicalDevice);
 
     // Check the required extensions
-    auto missingExtensions = this->requiredExtensions;
+    std::vector<std::string> missingExtensions(this->requiredExtensions.begin(), this->requiredExtensions.end());
     for (auto &extension : extensions) {
         std::erase(missingExtensions, extension.extensionName);
     }
