@@ -3,10 +3,6 @@
 #include <GLFW/glfw3.h>
 #include <stdexcept>
 
-#ifdef DEBUG
-    #define ENABLE_VALIDATION_LAYERS
-#endif
-
 Instance::Instance() {
     // Create a VkInstance
     VkApplicationInfo applicationInfo{};
@@ -17,8 +13,8 @@ Instance::Instance() {
     applicationInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
     applicationInfo.apiVersion = VK_API_VERSION_1_4;
 
-    auto extensions = this->getExtensions();
-    auto instanceLayers = this->getLayers();
+    auto extensions = this->getExtensionsToUse();
+    auto instanceLayers = this->getLayersToUse();
 
     VkInstanceCreateInfo instanceCreateInfo{};
     instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -71,20 +67,18 @@ std::vector<VkExtensionProperties> Instance::getAvailableExtensions() const {
     return availableExtensions;
 }
 
-std::vector<const char *> Instance::getExtensions() const {
-    std::vector<const char *> extensions{};
+std::vector<const char *> Instance::getExtensionsToUse() const {
+    // Start with the required extensions
+    std::vector<const char *> extensions = this->requiredExtensions;
 
-    // Add GLFW extensions
+    // Add GLFW required extensions
     uint32_t glfwExtensionCount;
     auto glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
     for (int i = 0; i < glfwExtensionCount; i++) {
         extensions.push_back(glfwExtensions[i]);
     }
 
-#ifdef ENABLE_VALIDATION_LAYERS
-    // Add extension for the validation layers message callback
-    extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-#endif
+    // Add optional extensions (none for now)
 
 #ifdef DEBUG
     LOG_DEBUG("Available extensions: ");
@@ -117,12 +111,11 @@ std::vector<VkLayerProperties> Instance::getAvailableLayers() const {
     return availableLayers;
 }
 
-std::vector<const char *> Instance::getLayers() const {
-    std::vector<const char *> layers{};
+std::vector<const char *> Instance::getLayersToUse() const {
+    // Start with the required layers
+    std::vector<const char *> layers = this->requiredLayers;
 
-#ifdef ENABLE_VALIDATION_LAYERS
-    layers.push_back("VK_LAYER_KHRONOS_validation");
-#endif
+    // Add optional layers (none for now)
 
 #ifdef DEBUG
     LOG_DEBUG("Available layers: ");

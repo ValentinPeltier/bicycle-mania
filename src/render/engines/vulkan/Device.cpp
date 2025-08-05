@@ -12,10 +12,13 @@ Device::Device(const Instance &instance, const Surface &surface)
     VkPhysicalDevice physicalDevice = this->getBestPhysicalDevice();
 
     // Get the queue create info
-    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos = this->getQueueCreateInfo(physicalDevice);
+    auto queueCreateInfos = this->getPhysicalDeviceQueueCreateInfos(physicalDevice);
 
     // Get the device features
     VkPhysicalDeviceFeatures physicalDeviceFeatures{};
+
+    // Get the extensions we want to use
+    auto extensions = this->getExtensionsToUse(physicalDevice);
 
     // Create a VkDevice
     VkDeviceCreateInfo deviceCreateInfo{};
@@ -23,14 +26,15 @@ Device::Device(const Instance &instance, const Surface &surface)
     deviceCreateInfo.queueCreateInfoCount = queueCreateInfos.size();
     deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
     deviceCreateInfo.pEnabledFeatures = &physicalDeviceFeatures;
-    deviceCreateInfo.enabledExtensionCount = 0;
+    deviceCreateInfo.enabledExtensionCount = extensions.size();
+    deviceCreateInfo.ppEnabledExtensionNames = extensions.data();
 
     if (vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &this->device) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create Vulkan device.");
     }
 
     // Retrieve the queues
-    QueueFamilyIndices queueFamilyIndices = Device::getQueueFamilies(physicalDevice);
+    QueueFamilyIndices queueFamilyIndices = this->getPhysicalDeviceQueueFamilies(physicalDevice);
     vkGetDeviceQueue(this->device, queueFamilyIndices.graphics.value(), 0, &this->graphicsQueue);
     vkGetDeviceQueue(this->device, queueFamilyIndices.present.value(), 0, &this->presentQueue);
 }
@@ -39,70 +43,49 @@ Device::~Device() {
     vkDestroyDevice(this->device, nullptr);
 }
 
-// -------------- //
-// --- Device --- //
-// -------------- //
+// ----------------------- //
+// --- Physical device --- //
+// ----------------------- //
 
-uint32_t Device::ratePhysicalDevice(VkPhysicalDevice device) const noexcept {
-    uint32_t score = 0;
-
-    // We need a device with a graphics and a present queue families
-    QueueFamilyIndices queueFamilies = this->getQueueFamilies(device);
-    if (!queueFamilies.graphics.has_value() || !queueFamilies.present.has_value()) {
-        return 0;
+std::vector<VkPhysicalDevice> Device::getPhysicalDevices() const {
+    uint32_t physicalDeviceCount;
+    if (vkEnumeratePhysicalDevices(this->instance.getVkInstance(), &physicalDeviceCount, nullptr) != VK_SUCCESS) {
+        throw std::runtime_error("Unable to get the physical devices.");
+    }
+    std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
+    if (vkEnumeratePhysicalDevices(this->instance.getVkInstance(), &physicalDeviceCount, physicalDevices.data()) !=
+        VK_SUCCESS) {
+        throw std::runtime_error("Unable to get the physical devices.");
     }
 
-    // Get the properties
-    VkPhysicalDeviceProperties properties{};
-    vkGetPhysicalDeviceProperties(device, &properties);
-
-    // Prefer GPUs
-    switch (properties.deviceType) {
-        case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
-            score += 1000;
-            break;
-        case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
-        case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
-            score += 200;
-            break;
-        default:
-            break;
-    }
-
-    // Maximum possible size of textures affects graphics quality
-    score += (int)(properties.limits.maxImageDimension2D / 1000);
-
-    return score;
+    return physicalDevices;
 }
 
 VkPhysicalDevice Device::getBestPhysicalDevice() const {
-    // Enumerate physical devices
-    uint32_t deviceCount;
-    vkEnumeratePhysicalDevices(this->instance.getVkInstance(), &deviceCount, nullptr);
-    if (deviceCount == 0) {
+    // Get physical devices
+    auto physicalDevices = this->getPhysicalDevices();
+    if (physicalDevices.empty()) {
         throw std::runtime_error("No physical device available.");
     }
-    std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(this->instance.getVkInstance(), &deviceCount, devices.data());
 
     // Rate the physical devices
     // Use an ordered map to automatically sort candidates by increasing score
-    std::multimap<uint32_t, VkPhysicalDevice> devicesByScore;
-    for (const auto &device : devices) {
-        uint32_t score = this->ratePhysicalDevice(device);
-        devicesByScore.insert(std::make_pair(score, device));
+    std::multimap<uint32_t, VkPhysicalDevice> scores;
+    for (const auto &physicalDevice : physicalDevices) {
+        uint32_t score = this->ratePhysicalDevice(physicalDevice);
+        scores.insert(std::make_pair(score, physicalDevice));
     }
 
     // If the best physical device is not suitable
-    if (devicesByScore.rbegin()->first == 0) {
+    if (scores.rbegin()->first == 0) {
         throw std::runtime_error("No suitable physical device.");
     }
 
-    VkPhysicalDevice chosenDevice = devicesByScore.rbegin()->second;
+    VkPhysicalDevice chosenDevice = scores.rbegin()->second;
 
 #ifdef DEBUG
     LOG_DEBUG("Available physical devices:");
-    for (auto deviceByScore : devicesByScore) {
+    for (auto deviceByScore : scores) {
         bool isUsed = deviceByScore.second == chosenDevice;
 
         VkPhysicalDeviceProperties properties{};
@@ -117,11 +100,111 @@ VkPhysicalDevice Device::getBestPhysicalDevice() const {
     return chosenDevice;
 }
 
+uint32_t Device::ratePhysicalDevice(VkPhysicalDevice physicalDevice) const noexcept {
+    uint32_t queueFamiliesScore = this->ratePhysicalDeviceQueueFamilies(physicalDevice);
+    if (queueFamiliesScore == 0) {
+        return 0;
+    }
+
+    uint32_t extensionsScore = this->ratePhysicalDeviceExtensions(physicalDevice);
+    if (extensionsScore == 0) {
+        return 0;
+    }
+
+    uint32_t propertiesScore = this->ratePhysicalDeviceProperties(physicalDevice);
+    if (propertiesScore == 0) {
+        return 0;
+    }
+
+    return queueFamiliesScore + extensionsScore + propertiesScore;
+}
+
+uint32_t Device::ratePhysicalDeviceQueueFamilies(VkPhysicalDevice physicalDevice) const noexcept {
+    QueueFamilyIndices queueFamilies = this->getPhysicalDeviceQueueFamilies(physicalDevice);
+
+    // We need a device with a graphics queue family
+    if (!queueFamilies.graphics.has_value()) {
+        return 0;
+    }
+
+    // We need a device with a present queue family
+    if (!queueFamilies.present.has_value()) {
+        return 0;
+    }
+
+    return 1;
+}
+
+uint32_t Device::ratePhysicalDeviceExtensions(VkPhysicalDevice physicalDevice) const noexcept {
+    // Get the available extensions
+    auto extensions = this->getAvailableExtensions(physicalDevice);
+
+    // Check the required extensions
+    auto missingExtensions = this->requiredExtensions;
+    for (auto &extension : extensions) {
+        std::erase(missingExtensions, extension.extensionName);
+    }
+    if (!missingExtensions.empty()) {
+        return 0;
+    }
+
+    return 1;
+}
+
+uint32_t Device::ratePhysicalDeviceProperties(VkPhysicalDevice physicalDevice) const noexcept {
+    uint32_t score = 0;
+
+    VkPhysicalDeviceProperties properties{};
+    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+    // Prefer GPUs
+    switch (properties.deviceType) {
+        case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
+            score += 1000;
+            break;
+        case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
+        case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
+            score += 200;
+            break;
+        default:
+            score += 1; // Any type of device will do the job, never return score 0
+            break;
+    }
+
+    // Prefer higher image dimensions
+    score += (int)(properties.limits.maxImageDimension2D / 1000);
+
+    return score;
+}
+
+std::vector<VkExtensionProperties> Device::getAvailableExtensions(VkPhysicalDevice physicalDevice) const {
+    uint32_t extensionCount;
+    if (vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr) != VK_SUCCESS) {
+        throw std::runtime_error("Unable to get the available device extensions.");
+    }
+    std::vector<VkExtensionProperties> extensions(extensionCount);
+    if (vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, extensions.data()) !=
+        VK_SUCCESS) {
+        throw std::runtime_error("Unable to get the available device extensions.");
+    }
+
+    return extensions;
+}
+
+std::vector<const char *> Device::getExtensionsToUse(VkPhysicalDevice physicalDevice) const {
+    // Start with the required extensions
+    std::vector<const char *> extensions = this->requiredExtensions;
+
+    // Add optional extensions (none for now)
+
+    return extensions;
+}
+
 // -------------- //
 // --- Queues --- //
 // -------------- //
 
-QueueFamilyIndices Device::getQueueFamilies(VkPhysicalDevice physicalDevice) const noexcept {
+QueueFamilyIndices Device::getPhysicalDeviceQueueFamilies(VkPhysicalDevice physicalDevice) const noexcept {
     QueueFamilyIndices indices;
 
     // Get the available queue families
@@ -150,9 +233,9 @@ QueueFamilyIndices Device::getQueueFamilies(VkPhysicalDevice physicalDevice) con
     return indices;
 }
 
-std::vector<VkDeviceQueueCreateInfo> Device::getQueueCreateInfo(VkPhysicalDevice physicalDevice) const {
+std::vector<VkDeviceQueueCreateInfo> Device::getPhysicalDeviceQueueCreateInfos(VkPhysicalDevice physicalDevice) const {
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfo{};
-    QueueFamilyIndices familyIndices = Device::getQueueFamilies(physicalDevice);
+    QueueFamilyIndices familyIndices = this->getPhysicalDeviceQueueFamilies(physicalDevice);
 
     // Add graphics queue
     float graphicsQueuePriority = 1.0f;
