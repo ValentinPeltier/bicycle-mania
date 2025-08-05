@@ -226,26 +226,23 @@ QueueFamilyIndices Device::getPhysicalDeviceQueueFamilies(VkPhysicalDevice physi
 }
 
 std::vector<VkDeviceQueueCreateInfo> Device::getPhysicalDeviceQueueCreateInfos(VkPhysicalDevice physicalDevice) const {
-    std::vector<VkDeviceQueueCreateInfo> queueCreateInfo{};
+    std::vector<VkDeviceQueueCreateInfo> createInfos;
+
     QueueFamilyIndices familyIndices = this->getPhysicalDeviceQueueFamilies(physicalDevice);
+    std::set<uint32_t> uniqueQueueFamilies = {
+        familyIndices.graphics.value(),
+        familyIndices.present.value(),
+    };
 
-    // Add graphics queue
-    float graphicsQueuePriority = 1.0f;
-    VkDeviceQueueCreateInfo graphicsQueueCreateInfo{};
-    graphicsQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    graphicsQueueCreateInfo.queueFamilyIndex = familyIndices.graphics.value();
-    graphicsQueueCreateInfo.queueCount = 1;
-    graphicsQueueCreateInfo.pQueuePriorities = &graphicsQueuePriority;
-    queueCreateInfo.push_back(graphicsQueueCreateInfo);
+    float queuePriority = 1.0f;
+    for (uint32_t familyIndex : uniqueQueueFamilies) {
+        VkDeviceQueueCreateInfo queueCreateInfo{};
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfo.queueFamilyIndex = familyIndex;
+        queueCreateInfo.queueCount = 1;
+        queueCreateInfo.pQueuePriorities = &queuePriority;
+        createInfos.push_back(queueCreateInfo);
+    }
 
-    // Add present queue
-    float presentQueuePriority = 1.0f;
-    VkDeviceQueueCreateInfo presentQueueCreateInfo{};
-    presentQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    presentQueueCreateInfo.queueFamilyIndex = familyIndices.present.value();
-    presentQueueCreateInfo.queueCount = 1;
-    presentQueueCreateInfo.pQueuePriorities = &presentQueuePriority;
-    queueCreateInfo.push_back(presentQueueCreateInfo);
-
-    return queueCreateInfo;
+    return createInfos;
 }
