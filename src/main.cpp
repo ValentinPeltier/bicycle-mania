@@ -1,4 +1,4 @@
-#include "core/Application.hpp"
+#include "Application.hpp"
 #include "core/Logger.hpp"
 #include <exception>
 
