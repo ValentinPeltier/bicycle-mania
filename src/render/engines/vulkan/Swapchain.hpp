@@ -17,6 +17,9 @@ class Swapchain {
         Swapchain(const Window &window, const Surface &surface, const Device &device);
         ~Swapchain();
 
+        const std::vector<VkImage> &getImages() const;
+        const VkFormat &getFormat() const;
+
         static uint32_t rate(VkPhysicalDevice physicalDevice, const Surface &surface);
 
     private:
@@ -26,7 +29,7 @@ class Swapchain {
         VkSwapchainKHR swapchain = VK_NULL_HANDLE;
         VkFormat format;
         VkExtent2D extent;
-        std::vector<VkImage> images;
+        std::vector<VkImage> images{};
 
         static SwapchainDetails getDetails(VkPhysicalDevice physicalDevice, const Surface &surface);
 

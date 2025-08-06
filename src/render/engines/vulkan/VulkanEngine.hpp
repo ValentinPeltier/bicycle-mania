@@ -2,6 +2,7 @@
 
 #include "../RenderEngine.hpp"
 #include "Device.hpp"
+#include "ImageViews.hpp"
 #include "Instance.hpp"
 #include "Surface.hpp"
 #include "Swapchain.hpp"
@@ -17,4 +18,5 @@ class VulkanEngine : public RenderEngine {
         Surface surface;
         Device device;
         Swapchain swapchain;
+        ImageViews imageViews;
 };
