@@ -4,6 +4,7 @@
 #include "Device.hpp"
 #include "Instance.hpp"
 #include "Surface.hpp"
+#include "Swapchain.hpp"
 #include "render/targets/Window.hpp"
 
 class VulkanEngine : public RenderEngine {
@@ -15,4 +16,5 @@ class VulkanEngine : public RenderEngine {
         Instance instance;
         Surface surface;
         Device device;
+        Swapchain swapchain;
 };

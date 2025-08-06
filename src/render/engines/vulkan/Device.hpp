@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Instance.hpp"
-#include "render/engines/vulkan/Surface.hpp"
+#include "Surface.hpp"
 #include <cstdint>
 #include <optional>
 #include <vulkan/vulkan_core.h>
@@ -16,9 +16,15 @@ class Device {
         Device(const Instance &instance, const Surface &surface);
         ~Device();
 
+        const VkDevice &getVkDevice() const noexcept;
+        const VkPhysicalDevice &getVkPhysicalDevice() const noexcept;
+
+        QueueFamilyIndices getQueueFamilyIndices() const;
+
     private:
         const Instance &instance;
         const Surface &surface;
+        VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
         VkDevice device = VK_NULL_HANDLE;
         VkQueue graphicsQueue = VK_NULL_HANDLE;
         VkQueue presentQueue = VK_NULL_HANDLE;
@@ -33,12 +39,12 @@ class Device {
          * @return uint32_t `0` means that the physical device is not suitable for the engine.
          */
         uint32_t ratePhysicalDevice(VkPhysicalDevice physicalDevice) const noexcept;
-        uint32_t ratePhysicalDeviceQueueFamilies(VkPhysicalDevice physicalDevice) const noexcept;
-        uint32_t ratePhysicalDeviceExtensions(VkPhysicalDevice physicalDevice) const noexcept;
-        uint32_t ratePhysicalDeviceProperties(VkPhysicalDevice physicalDevice) const noexcept;
+        uint32_t rateQueueFamilies(VkPhysicalDevice physicalDevice) const;
+        uint32_t rateExtensions(VkPhysicalDevice physicalDevice) const;
+        uint32_t rateProperties(VkPhysicalDevice physicalDevice) const noexcept;
         std::vector<VkExtensionProperties> getAvailableExtensions(VkPhysicalDevice physicalDevice) const;
         std::vector<const char *> getExtensionsToUse(VkPhysicalDevice physicalDevice) const;
 
-        std::vector<VkDeviceQueueCreateInfo> getPhysicalDeviceQueueCreateInfos(VkPhysicalDevice physicalDevice) const;
-        QueueFamilyIndices getPhysicalDeviceQueueFamilies(VkPhysicalDevice device) const noexcept;
+        std::vector<VkDeviceQueueCreateInfo> getQueueCreateInfos(VkPhysicalDevice physicalDevice) const;
+        QueueFamilyIndices getQueueFamilyIndices(VkPhysicalDevice physicalDevice) const;
 };

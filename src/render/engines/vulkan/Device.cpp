@@ -1,8 +1,10 @@
 #include "Device.hpp"
 #include "Instance.hpp"
-#include "core/Logger.hpp"
+#include "Swapchain.hpp"
 #include <algorithm>
+#include <cstdint>
 #include <map>
+#include <set>
 #include <stdexcept>
 #include <vulkan/vulkan_core.h>
 
@@ -10,32 +12,46 @@ Device::Device(const Instance &instance, const Surface &surface)
     : instance(instance),
       surface(surface) {
     // Choose the physical device
-    VkPhysicalDevice physicalDevice = this->getBestPhysicalDevice();
+    this->physicalDevice = this->getBestPhysicalDevice();
 
-    // Get the queue create info
-    auto queueCreateInfos = this->getPhysicalDeviceQueueCreateInfos(physicalDevice);
+    // Get the queue create infos
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+    QueueFamilyIndices familyIndices = this->getQueueFamilyIndices(physicalDevice);
+    std::set<uint32_t> uniqueQueueFamilies = {
+        familyIndices.graphics.value(),
+        familyIndices.present.value(),
+    };
+    float queuePriority = 1.0f;
+    for (uint32_t familyIndex : uniqueQueueFamilies) {
+        VkDeviceQueueCreateInfo queueCreateInfo{};
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfo.queueFamilyIndex = familyIndex;
+        queueCreateInfo.queueCount = 1;
+        queueCreateInfo.pQueuePriorities = &queuePriority;
+        queueCreateInfos.push_back(queueCreateInfo);
+    }
 
     // Get the device features
     VkPhysicalDeviceFeatures physicalDeviceFeatures{};
 
     // Get the extensions we want to use
-    auto extensions = this->getExtensionsToUse(physicalDevice);
+    auto extensions = this->getExtensionsToUse(this->physicalDevice);
 
     // Create a VkDevice
-    VkDeviceCreateInfo deviceCreateInfo{};
-    deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    deviceCreateInfo.queueCreateInfoCount = queueCreateInfos.size();
-    deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
-    deviceCreateInfo.pEnabledFeatures = &physicalDeviceFeatures;
-    deviceCreateInfo.enabledExtensionCount = extensions.size();
-    deviceCreateInfo.ppEnabledExtensionNames = extensions.data();
+    VkDeviceCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    createInfo.queueCreateInfoCount = queueCreateInfos.size();
+    createInfo.pQueueCreateInfos = queueCreateInfos.data();
+    createInfo.pEnabledFeatures = &physicalDeviceFeatures;
+    createInfo.enabledExtensionCount = extensions.size();
+    createInfo.ppEnabledExtensionNames = extensions.data();
 
-    if (vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &this->device) != VK_SUCCESS) {
+    if (vkCreateDevice(this->physicalDevice, &createInfo, nullptr, &this->device) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create Vulkan device.");
     }
 
     // Retrieve the queues
-    QueueFamilyIndices queueFamilyIndices = this->getPhysicalDeviceQueueFamilies(physicalDevice);
+    QueueFamilyIndices queueFamilyIndices = this->getQueueFamilyIndices(this->physicalDevice);
     vkGetDeviceQueue(this->device, queueFamilyIndices.graphics.value(), 0, &this->graphicsQueue);
     vkGetDeviceQueue(this->device, queueFamilyIndices.present.value(), 0, &this->presentQueue);
 }
@@ -44,9 +60,21 @@ Device::~Device() {
     vkDestroyDevice(this->device, nullptr);
 }
 
-// ----------------------- //
-// --- Physical device --- //
-// ----------------------- //
+const VkDevice &Device::getVkDevice() const noexcept {
+    return this->device;
+}
+
+const VkPhysicalDevice &Device::getVkPhysicalDevice() const noexcept {
+    return this->physicalDevice;
+}
+
+QueueFamilyIndices Device::getQueueFamilyIndices() const {
+    if (this->physicalDevice == VK_NULL_HANDLE) {
+        throw std::runtime_error("Physical device has not been created yet.");
+    }
+
+    return this->getQueueFamilyIndices(this->physicalDevice);
+}
 
 std::vector<VkPhysicalDevice> Device::getPhysicalDevices() const {
     uint32_t physicalDeviceCount;
@@ -82,37 +110,23 @@ VkPhysicalDevice Device::getBestPhysicalDevice() const {
         throw std::runtime_error("No suitable physical device.");
     }
 
-    VkPhysicalDevice chosenDevice = scores.rbegin()->second;
-
-#ifdef DEBUG
-    LOG_DEBUG("Available physical devices:");
-    for (auto deviceByScore : scores) {
-        bool isUsed = deviceByScore.second == chosenDevice;
-
-        VkPhysicalDeviceProperties properties{};
-        vkGetPhysicalDeviceProperties(deviceByScore.second, &properties);
-
-        LOG_DEBUG(std::string("  - ") + (isUsed ? "(used) " : "") + "(score: " + std::to_string(deviceByScore.first) +
-                  ") " + properties.deviceName);
-    }
-#endif
-
     // Return the best physical device
-    return chosenDevice;
+    return scores.rbegin()->second;
 }
 
 uint32_t Device::ratePhysicalDevice(VkPhysicalDevice physicalDevice) const noexcept {
-    uint32_t queueFamiliesScore = this->ratePhysicalDeviceQueueFamilies(physicalDevice);
-    uint32_t extensionsScore = this->ratePhysicalDeviceExtensions(physicalDevice);
-    uint32_t propertiesScore = this->ratePhysicalDeviceProperties(physicalDevice);
+    uint32_t queueFamiliesScore = this->rateQueueFamilies(physicalDevice);
+    uint32_t extensionsScore = this->rateExtensions(physicalDevice);
+    uint32_t propertiesScore = this->rateProperties(physicalDevice);
+    uint32_t swapchainScore = Swapchain::rate(physicalDevice, this->surface);
 
     return std::min({queueFamiliesScore, extensionsScore, propertiesScore}) == 0
                ? 0
                : queueFamiliesScore + extensionsScore + propertiesScore;
 }
 
-uint32_t Device::ratePhysicalDeviceQueueFamilies(VkPhysicalDevice physicalDevice) const noexcept {
-    QueueFamilyIndices queueFamilies = this->getPhysicalDeviceQueueFamilies(physicalDevice);
+uint32_t Device::rateQueueFamilies(VkPhysicalDevice physicalDevice) const {
+    QueueFamilyIndices queueFamilies = this->getQueueFamilyIndices(physicalDevice);
 
     // We need a device with a graphics queue family
     if (!queueFamilies.graphics.has_value()) {
@@ -127,7 +141,7 @@ uint32_t Device::ratePhysicalDeviceQueueFamilies(VkPhysicalDevice physicalDevice
     return 1;
 }
 
-uint32_t Device::ratePhysicalDeviceExtensions(VkPhysicalDevice physicalDevice) const noexcept {
+uint32_t Device::rateExtensions(VkPhysicalDevice physicalDevice) const {
     // Get the available extensions
     auto extensions = this->getAvailableExtensions(physicalDevice);
 
@@ -143,7 +157,7 @@ uint32_t Device::ratePhysicalDeviceExtensions(VkPhysicalDevice physicalDevice) c
     return 1;
 }
 
-uint32_t Device::ratePhysicalDeviceProperties(VkPhysicalDevice physicalDevice) const noexcept {
+uint32_t Device::rateProperties(VkPhysicalDevice physicalDevice) const noexcept {
     uint32_t score = 0;
 
     VkPhysicalDeviceProperties properties{};
@@ -192,11 +206,7 @@ std::vector<const char *> Device::getExtensionsToUse(VkPhysicalDevice physicalDe
     return extensions;
 }
 
-// -------------- //
-// --- Queues --- //
-// -------------- //
-
-QueueFamilyIndices Device::getPhysicalDeviceQueueFamilies(VkPhysicalDevice physicalDevice) const noexcept {
+QueueFamilyIndices Device::getQueueFamilyIndices(VkPhysicalDevice physicalDevice) const {
     QueueFamilyIndices indices;
 
     // Get the available queue families
@@ -214,7 +224,10 @@ QueueFamilyIndices Device::getPhysicalDeviceQueueFamilies(VkPhysicalDevice physi
 
         // Present
         VkBool32 isPresentSupported;
-        vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, index, this->surface.getVkSurface(), &isPresentSupported);
+        if (vkGetPhysicalDeviceSurfaceSupportKHR(
+                physicalDevice, index, this->surface.getVkSurface(), &isPresentSupported) != VK_SUCCESS) {
+            throw std::runtime_error("Unable to check if a present queue is supported.");
+        }
         if (isPresentSupported) {
             indices.present = index;
         }
@@ -223,26 +236,4 @@ QueueFamilyIndices Device::getPhysicalDeviceQueueFamilies(VkPhysicalDevice physi
     }
 
     return indices;
-}
-
-std::vector<VkDeviceQueueCreateInfo> Device::getPhysicalDeviceQueueCreateInfos(VkPhysicalDevice physicalDevice) const {
-    std::vector<VkDeviceQueueCreateInfo> createInfos;
-
-    QueueFamilyIndices familyIndices = this->getPhysicalDeviceQueueFamilies(physicalDevice);
-    std::set<uint32_t> uniqueQueueFamilies = {
-        familyIndices.graphics.value(),
-        familyIndices.present.value(),
-    };
-
-    float queuePriority = 1.0f;
-    for (uint32_t familyIndex : uniqueQueueFamilies) {
-        VkDeviceQueueCreateInfo queueCreateInfo{};
-        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueCreateInfo.queueFamilyIndex = familyIndex;
-        queueCreateInfo.queueCount = 1;
-        queueCreateInfo.pQueuePriorities = &queuePriority;
-        createInfos.push_back(queueCreateInfo);
-    }
-
-    return createInfos;
 }

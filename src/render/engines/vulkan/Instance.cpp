@@ -16,22 +16,22 @@ Instance::Instance() {
     auto extensions = this->getExtensionsToUse();
     auto instanceLayers = this->getLayersToUse();
 
-    VkInstanceCreateInfo instanceCreateInfo{};
-    instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    instanceCreateInfo.pApplicationInfo = &applicationInfo;
-    instanceCreateInfo.enabledExtensionCount = extensions.size();
-    instanceCreateInfo.ppEnabledExtensionNames = extensions.data();
-    instanceCreateInfo.enabledLayerCount = instanceLayers.size();
-    instanceCreateInfo.ppEnabledLayerNames = instanceLayers.data();
+    VkInstanceCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    createInfo.pApplicationInfo = &applicationInfo;
+    createInfo.enabledExtensionCount = extensions.size();
+    createInfo.ppEnabledExtensionNames = extensions.data();
+    createInfo.enabledLayerCount = instanceLayers.size();
+    createInfo.ppEnabledLayerNames = instanceLayers.data();
 
 #ifdef ENABLE_VALIDATION_LAYERS
     // Add validation layer for the instance creation itself
     VkDebugUtilsMessengerCreateInfoEXT validationLayerMessengerCreateInfo =
         this->getValidationLayerMessengerCreateInfo();
-    instanceCreateInfo.pNext = &validationLayerMessengerCreateInfo;
+    createInfo.pNext = &validationLayerMessengerCreateInfo;
 #endif
 
-    if (vkCreateInstance(&instanceCreateInfo, nullptr, &this->instance) != VK_SUCCESS) {
+    if (vkCreateInstance(&createInfo, nullptr, &this->instance) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create Vulkan instance.");
     }
 
@@ -80,21 +80,6 @@ std::vector<const char *> Instance::getExtensionsToUse() const {
 
     // Add optional extensions (none for now)
 
-#ifdef DEBUG
-    LOG_DEBUG("Available extensions: ");
-    for (VkExtensionProperties &availableExtension : this->getAvailableExtensions()) {
-        std::string availableExtensionName = static_cast<std::string>(availableExtension.extensionName);
-        bool isUsed = false;
-        for (auto &extension : extensions) {
-            if (extension == availableExtensionName) {
-                isUsed = true;
-                break;
-            }
-        }
-        LOG_DEBUG(std::string("  - ") + (isUsed ? "(used) " : "") + availableExtensionName);
-    }
-#endif
-
     return extensions;
 }
 
@@ -116,21 +101,6 @@ std::vector<const char *> Instance::getLayersToUse() const {
     std::vector<const char *> layers = this->requiredLayers;
 
     // Add optional layers (none for now)
-
-#ifdef DEBUG
-    LOG_DEBUG("Available layers: ");
-    for (VkLayerProperties &availableLayer : this->getAvailableLayers()) {
-        std::string availableLayerName = static_cast<std::string>(availableLayer.layerName);
-        bool isUsed = false;
-        for (auto &layer : layers) {
-            if (layer == availableLayerName) {
-                isUsed = true;
-                break;
-            }
-        }
-        LOG_DEBUG(std::string("  - ") + (isUsed ? "(used) " : "") + availableLayerName);
-    }
-#endif
 
     return layers;
 }

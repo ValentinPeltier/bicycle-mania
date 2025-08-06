@@ -3,7 +3,8 @@
 VulkanEngine::VulkanEngine(const Window &window)
     : instance(),
       surface(this->instance, window),
-      device(this->instance, this->surface) {
+      device(this->instance, this->surface),
+      swapchain(window, this->surface, this->device) {
 }
 
 VulkanEngine::~VulkanEngine() {

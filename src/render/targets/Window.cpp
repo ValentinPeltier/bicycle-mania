@@ -46,6 +46,13 @@ bool Window::shouldClose() const {
     return glfwWindowShouldClose(this->window);
 }
 
+WindowSize Window::getFramebufferSize() const {
+    int width, height;
+    glfwGetFramebufferSize(this->window, &width, &height);
+
+    return {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+}
+
 void Window::update() const {
     glfwPollEvents();
 }

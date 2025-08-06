@@ -1,7 +1,13 @@
 #pragma once
 
 #include <GLFW/glfw3.h>
+#include <cstdint>
 #include <string>
+
+struct WindowSize {
+        uint32_t width;
+        uint32_t height;
+};
 
 class Window {
     public:
@@ -15,6 +21,7 @@ class Window {
         void unMaximize() const;
 
         bool shouldClose() const;
+        WindowSize getFramebufferSize() const;
         void update() const;
 
     private:
