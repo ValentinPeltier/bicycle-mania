@@ -17,7 +17,6 @@ project "Bicycle_Mania"
     outputDir = "%{cfg.system}-%{cfg.architecture}-%{cfg.buildcfg:lower()}"
     targetdir ("bin/" .. outputDir)
     objdir ("obj/" .. outputDir)
-    postbuildcommands ("{COPYDIR} share bin/" .. outputDir)
 
     filter "system:windows"
         defines { "OS_WINDOWS" }
@@ -26,6 +25,7 @@ project "Bicycle_Mania"
             "vulkan-1",
             "glfw3",
         }
+    filter {}
 
     filter "system:linux"
         defines { "OS_LINUX" }
@@ -34,11 +34,17 @@ project "Bicycle_Mania"
             "vulkan",
             "glfw", "dl", "pthread", "X11", "Xxf86vm", "Xrandr", "Xi",
         }
+        postbuildcommands ("./compile_shaders.sh")
+    filter {}
 
     filter "configurations:Debug"
         defines { "DEBUG" }
         symbols "On"
+    filter {}
 
     filter "configurations:Release"
         defines { "RELEASE" }
         optimize "On"
+    filter {}
+
+    postbuildcommands ("{COPYDIR} share bin/" .. outputDir)
