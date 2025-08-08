@@ -1,7 +1,7 @@
 #pragma once
 
-#include "render/engines/vulkan/Device.hpp"
-#include "render/engines/vulkan/Swapchain.hpp"
+#include "Device.hpp"
+#include "Swapchain.hpp"
 #include <vector>
 #include <vulkan/vulkan_core.h>
 class ImageViews {

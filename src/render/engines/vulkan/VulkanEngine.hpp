@@ -4,6 +4,7 @@
 #include "Device.hpp"
 #include "ImageViews.hpp"
 #include "Instance.hpp"
+#include "RenderPass.hpp"
 #include "Surface.hpp"
 #include "Swapchain.hpp"
 #include "render/targets/Window.hpp"
@@ -19,4 +20,5 @@ class VulkanEngine : public RenderEngine {
         Device device;
         Swapchain swapchain;
         ImageViews imageViews;
+        RenderPass renderPass;
 };
