@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../RenderEngine.hpp"
+#include "CommandBuffer.hpp"
 #include "CommandPool.hpp"
 #include "Device.hpp"
 #include "Framebuffers.hpp"
@@ -27,4 +28,5 @@ class VulkanEngine : public RenderEngine {
         Pipeline pipeline;
         Framebuffers framebuffers;
         CommandPool commandPool;
+        CommandBuffer commandBuffer;
 };

@@ -9,7 +9,8 @@ VulkanEngine::VulkanEngine(const Window &window)
       renderPass(this->device, this->swapchain),
       pipeline(this->device, this->swapchain, this->renderPass),
       framebuffers(this->device, this->swapchain, this->imageViews, this->renderPass),
-      commandPool(this->device) {
+      commandPool(this->device),
+      commandBuffer(this->device, this->swapchain, this->renderPass, this->pipeline, this->commandPool) {
 }
 
 VulkanEngine::~VulkanEngine() {
