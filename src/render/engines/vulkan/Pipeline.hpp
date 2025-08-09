@@ -11,6 +11,8 @@ class Pipeline {
         Pipeline(const Device &device, const Swapchain &swapchain, const RenderPass &renderPass);
         ~Pipeline();
 
+        VkPipeline getVkPipeline() const noexcept;
+
     private:
         const Device &device;
         const Swapchain &swapchain;

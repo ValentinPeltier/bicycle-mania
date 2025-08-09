@@ -119,6 +119,10 @@ Pipeline::~Pipeline() {
     vkDestroyPipelineLayout(this->device.getVkDevice(), this->layout, nullptr);
 }
 
+VkPipeline Pipeline::getVkPipeline() const noexcept {
+    return this->pipeline;
+}
+
 VkShaderModule Pipeline::createShaderModule(const std::vector<char> &code) const {
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
