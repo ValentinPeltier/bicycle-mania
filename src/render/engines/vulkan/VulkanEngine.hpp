@@ -2,6 +2,7 @@
 
 #include "../RenderEngine.hpp"
 #include "Device.hpp"
+#include "Framebuffers.hpp"
 #include "ImageViews.hpp"
 #include "Instance.hpp"
 #include "Pipeline.hpp"
@@ -23,4 +24,5 @@ class VulkanEngine : public RenderEngine {
         ImageViews imageViews;
         RenderPass renderPass;
         Pipeline pipeline;
+        Framebuffers framebuffers;
 };

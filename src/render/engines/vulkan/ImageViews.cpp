@@ -41,3 +41,11 @@ ImageViews::~ImageViews() {
         vkDestroyImageView(this->device.getVkDevice(), imageView, nullptr);
     }
 }
+
+uint32_t ImageViews::getSize() const noexcept {
+    return this->imageViews.size();
+}
+
+const std::vector<VkImageView> &ImageViews::getVkImageViews() const noexcept {
+    return this->imageViews;
+}

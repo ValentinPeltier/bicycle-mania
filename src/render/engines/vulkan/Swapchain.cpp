@@ -57,12 +57,16 @@ Swapchain::~Swapchain() {
     vkDestroySwapchainKHR(this->device.getVkDevice(), this->swapchain, nullptr);
 }
 
-const std::vector<VkImage> &Swapchain::getImages() const {
+const std::vector<VkImage> &Swapchain::getImages() const noexcept {
     return this->images;
 }
 
-const VkFormat &Swapchain::getFormat() const {
+const VkFormat &Swapchain::getFormat() const noexcept {
     return this->format;
+}
+
+const VkExtent2D &Swapchain::getExtent() const noexcept {
+    return this->extent;
 }
 
 uint32_t Swapchain::rate(VkPhysicalDevice physicalDevice, const Surface &surface) {

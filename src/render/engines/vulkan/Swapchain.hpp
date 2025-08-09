@@ -17,8 +17,9 @@ class Swapchain {
         Swapchain(const Window &window, const Surface &surface, const Device &device);
         ~Swapchain();
 
-        const std::vector<VkImage> &getImages() const;
-        const VkFormat &getFormat() const;
+        const std::vector<VkImage> &getImages() const noexcept;
+        const VkFormat &getFormat() const noexcept;
+        const VkExtent2D &getExtent() const noexcept;
 
         static uint32_t rate(VkPhysicalDevice physicalDevice, const Surface &surface);
 
