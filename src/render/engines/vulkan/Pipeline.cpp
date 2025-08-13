@@ -1,15 +1,13 @@
 #include "Pipeline.hpp"
-#include "RenderPass.hpp"
 #include "Swapchain.hpp"
 #include "core/File.hpp"
 #include "core/Path.hpp"
 #include <stdexcept>
 #include <vulkan/vulkan_core.h>
 
-Pipeline::Pipeline(const Device &device, const Swapchain &swapchain, const RenderPass &renderPass)
+Pipeline::Pipeline(const Device &device, const Swapchain &swapchain)
     : device(device),
-      swapchain(swapchain),
-      renderPass(renderPass) {
+      swapchain(swapchain) {
     // Create shader modules
     auto vertexShaderCode = File(Path("shaders/test.vert.spv")).readBinary();
     auto fragmentShaderCode = File(Path("shaders/test.frag.spv")).readBinary();
@@ -102,7 +100,7 @@ Pipeline::Pipeline(const Device &device, const Swapchain &swapchain, const Rende
     pipelineInfo.pColorBlendState = &colorBlendingInfo;
     pipelineInfo.pDynamicState = &dynamicStateInfo;
     pipelineInfo.layout = this->layout;
-    pipelineInfo.renderPass = this->renderPass.getVkRenderPass();
+    pipelineInfo.renderPass = this->swapchain.getVkRenderPass();
     pipelineInfo.subpass = 0;
 
     if (vkCreateGraphicsPipelines(

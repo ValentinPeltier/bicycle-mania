@@ -1,14 +1,13 @@
 #pragma once
 
 #include "Device.hpp"
-#include "RenderPass.hpp"
 #include "Swapchain.hpp"
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
 class Pipeline {
     public:
-        Pipeline(const Device &device, const Swapchain &swapchain, const RenderPass &renderPass);
+        Pipeline(const Device &device, const Swapchain &swapchain);
         ~Pipeline();
 
         VkPipeline getVkPipeline() const noexcept;
@@ -16,7 +15,6 @@ class Pipeline {
     private:
         const Device &device;
         const Swapchain &swapchain;
-        const RenderPass &renderPass;
         VkPipelineLayout layout = VK_NULL_HANDLE;
         VkPipeline pipeline = VK_NULL_HANDLE;
 

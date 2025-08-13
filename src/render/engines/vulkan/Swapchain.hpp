@@ -1,5 +1,7 @@
 #pragma once
 
+class Swapchain;
+
 #include "Device.hpp"
 #include "Surface.hpp"
 #include <cstdint>
@@ -17,9 +19,12 @@ class Swapchain {
         Swapchain(const Window &window, const Surface &surface, const Device &device);
         ~Swapchain();
 
-        const std::vector<VkImage> &getImages() const noexcept;
-        const VkFormat &getFormat() const noexcept;
+        VkSwapchainKHR getVkSwapchain() const noexcept;
         const VkExtent2D &getExtent() const noexcept;
+        uint32_t getNextImageIndex(VkSemaphore signalSemaphore) const;
+        VkFramebuffer getFramebuffer(uint32_t index) const;
+        VkRenderPass getVkRenderPass() const noexcept;
+        uint32_t getImageCount() const noexcept;
 
         static uint32_t rate(VkPhysicalDevice physicalDevice, const Surface &surface);
 
@@ -28,9 +33,12 @@ class Swapchain {
         const Surface &surface;
         const Device &device;
         VkSwapchainKHR swapchain = VK_NULL_HANDLE;
-        VkFormat format;
-        VkExtent2D extent;
+        VkFormat format{};
+        VkExtent2D extent{};
         std::vector<VkImage> images{};
+        std::vector<VkImageView> imageViews{};
+        std::vector<VkFramebuffer> framebuffers{};
+        VkRenderPass renderPass = VK_NULL_HANDLE;
 
         static SwapchainDetails getDetails(VkPhysicalDevice physicalDevice, const Surface &surface);
 
@@ -40,4 +48,8 @@ class Swapchain {
         uint32_t chooseImageCount(const VkSurfaceCapabilitiesKHR &capabilities) const;
 
         std::vector<VkImage> fetchImages() const;
+
+        std::vector<VkImageView> createImageViews() const;
+        VkRenderPass createRenderPass() const;
+        std::vector<VkFramebuffer> createFramebuffers() const;
 };

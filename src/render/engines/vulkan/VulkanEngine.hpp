@@ -1,32 +1,37 @@
 #pragma once
 
 #include "../RenderEngine.hpp"
-#include "CommandBuffer.hpp"
+#include "CommandBuffers.hpp"
 #include "CommandPool.hpp"
 #include "Device.hpp"
-#include "Framebuffers.hpp"
-#include "ImageViews.hpp"
 #include "Instance.hpp"
 #include "Pipeline.hpp"
-#include "RenderPass.hpp"
 #include "Surface.hpp"
 #include "Swapchain.hpp"
 #include "render/targets/Window.hpp"
+#include <vulkan/vulkan_core.h>
 
 class VulkanEngine : public RenderEngine {
     public:
         VulkanEngine(const Window &window);
         ~VulkanEngine() override;
 
+        void draw() override;
+
     private:
         Instance instance;
         Surface surface;
         Device device;
         Swapchain swapchain;
-        ImageViews imageViews;
-        RenderPass renderPass;
         Pipeline pipeline;
-        Framebuffers framebuffers;
+
+        const int MAX_FRAMES_WAITING = 2;
+        uint32_t frameIndex = 0;
+
         CommandPool commandPool;
-        CommandBuffer commandBuffer;
+        CommandBuffers commandBuffers;
+
+        std::vector<VkSemaphore> imageAvailableSemaphores{};
+        std::vector<VkSemaphore> renderFinishedSemaphores{};
+        std::vector<VkFence> framePresentedFences{};
 };

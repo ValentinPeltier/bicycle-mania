@@ -76,6 +76,14 @@ QueueFamilyIndices Device::getQueueFamilyIndices() const {
     return this->getQueueFamilyIndices(this->physicalDevice);
 }
 
+VkQueue Device::getGraphicsQueue() const noexcept {
+    return this->graphicsQueue;
+}
+
+VkQueue Device::getPresentQueue() const noexcept {
+    return this->presentQueue;
+}
+
 std::vector<VkPhysicalDevice> Device::getPhysicalDevices() const {
     uint32_t physicalDeviceCount;
     if (vkEnumeratePhysicalDevices(this->instance.getVkInstance(), &physicalDeviceCount, nullptr) != VK_SUCCESS) {
@@ -218,18 +226,22 @@ QueueFamilyIndices Device::getQueueFamilyIndices(VkPhysicalDevice physicalDevice
     uint32_t index = 0;
     for (auto &queueFamily : queueFamilies) {
         // Graphics
-        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-            indices.graphics = index;
+        if (!indices.graphics.has_value()) {
+            if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+                indices.graphics = index;
+            }
         }
 
         // Present
-        VkBool32 isPresentSupported;
-        if (vkGetPhysicalDeviceSurfaceSupportKHR(
-                physicalDevice, index, this->surface.getVkSurface(), &isPresentSupported) != VK_SUCCESS) {
-            throw std::runtime_error("Unable to check if a present queue is supported.");
-        }
-        if (isPresentSupported) {
-            indices.present = index;
+        if (!indices.present.has_value()) {
+            VkBool32 isPresentSupported;
+            if (vkGetPhysicalDeviceSurfaceSupportKHR(
+                    physicalDevice, index, this->surface.getVkSurface(), &isPresentSupported) != VK_SUCCESS) {
+                throw std::runtime_error("Unable to check if a present queue is supported.");
+            }
+            if (isPresentSupported) {
+                indices.present = index;
+            }
         }
 
         ++index;

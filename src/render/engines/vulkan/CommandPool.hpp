@@ -1,6 +1,6 @@
 #pragma once
 
-#include "render/engines/vulkan/Device.hpp"
+#include "Device.hpp"
 #include <vulkan/vulkan_core.h>
 
 class CommandPool {

@@ -20,6 +20,8 @@ class Device {
         const VkPhysicalDevice &getVkPhysicalDevice() const noexcept;
 
         QueueFamilyIndices getQueueFamilyIndices() const;
+        VkQueue getGraphicsQueue() const noexcept;
+        VkQueue getPresentQueue() const noexcept;
 
     private:
         const Instance &instance;

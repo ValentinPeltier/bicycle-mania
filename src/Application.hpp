@@ -19,6 +19,7 @@ class Application {
         void run() {
             while (!Application::sigint && !this->window->shouldClose()) {
                 this->window->update();
+                this->renderEngine->draw();
             }
         }
 
