@@ -2,7 +2,6 @@
 
 #include "../RenderEngine.hpp"
 #include "CommandBuffers.hpp"
-#include "CommandPool.hpp"
 #include "Device.hpp"
 #include "Instance.hpp"
 #include "Pipeline.hpp"
@@ -28,7 +27,6 @@ class VulkanEngine : public RenderEngine {
         const int MAX_FRAMES_WAITING = 2;
         uint32_t frameIndex = 0;
 
-        CommandPool commandPool;
         CommandBuffers commandBuffers;
 
         std::vector<VkSemaphore> imageAvailableSemaphores{};

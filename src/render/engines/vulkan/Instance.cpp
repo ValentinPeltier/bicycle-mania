@@ -45,7 +45,7 @@ Instance::~Instance() {
     vkDestroyInstance(this->instance, nullptr);
 }
 
-const VkInstance &Instance::getVkInstance() const noexcept {
+VkInstance Instance::getVkInstance() const noexcept {
     return this->instance;
 }
 

@@ -21,7 +21,7 @@ class Swapchain {
 
         VkSwapchainKHR getVkSwapchain() const noexcept;
         const VkExtent2D &getExtent() const noexcept;
-        VkFramebuffer getFramebuffer(uint32_t index) const;
+        VkFramebuffer getVkFramebuffer(uint32_t index) const;
         VkRenderPass getVkRenderPass() const noexcept;
         uint32_t getImageCount() const noexcept;
 
@@ -43,6 +43,12 @@ class Swapchain {
         VkRenderPass renderPass = VK_NULL_HANDLE;
         std::vector<VkFramebuffer> framebuffers{};
 
+    private:
+        VkSwapchainKHR createSwapchain(const VkSurfaceCapabilitiesKHR &capabilities) const;
+        std::vector<VkImageView> createImageViews() const;
+        VkRenderPass createRenderPass() const;
+        std::vector<VkFramebuffer> createFramebuffers() const;
+
         static SwapchainDetails getDetails(VkPhysicalDevice physicalDevice, const Surface &surface);
 
         VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &surfaceFormats) const;
@@ -51,9 +57,4 @@ class Swapchain {
         uint32_t chooseImageCount(const VkSurfaceCapabilitiesKHR &capabilities) const;
 
         std::vector<VkImage> fetchImages() const;
-
-        VkSwapchainKHR createSwapchain(const VkSurfaceCapabilitiesKHR &capabilities) const;
-        std::vector<VkImageView> createImageViews() const;
-        VkRenderPass createRenderPass() const;
-        std::vector<VkFramebuffer> createFramebuffers() const;
 };

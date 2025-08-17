@@ -34,7 +34,6 @@ project "Bicycle_Mania"
             "vulkan",
             "glfw", "dl", "pthread", "X11", "Xxf86vm", "Xrandr", "Xi",
         }
-        postbuildcommands ("./compile_shaders.sh")
     filter {}
 
     filter "configurations:Debug"

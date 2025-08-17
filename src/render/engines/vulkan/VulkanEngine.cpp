@@ -9,8 +9,7 @@ VulkanEngine::VulkanEngine(const Window &window)
       device(this->instance, this->surface),
       swapchain(window, this->surface, this->device),
       pipeline(this->device, this->swapchain),
-      commandPool(this->device),
-      commandBuffers(this->device, this->swapchain, this->pipeline, this->commandPool, this->MAX_FRAMES_WAITING) {
+      commandBuffers(this->device, this->swapchain, this->pipeline, this->MAX_FRAMES_WAITING) {
 
     // Create synchronization objects
     this->imageAvailableSemaphores.resize(this->MAX_FRAMES_WAITING);
@@ -77,8 +76,7 @@ void VulkanEngine::draw() {
     }
 
     // Record command buffer
-    this->commandBuffers.reset(this->frameIndex);
-    this->commandBuffers.record(this->frameIndex, this->swapchain.getFramebuffer(imageIndex));
+    this->commandBuffers.record(this->frameIndex, this->swapchain.getVkFramebuffer(imageIndex));
 
     // Submit draw command buffer
     VkSubmitInfo submitInfo{};
@@ -89,12 +87,13 @@ void VulkanEngine::draw() {
     submitInfo.pWaitSemaphores = waitSemaphores;
     submitInfo.pWaitDstStageMask = waitStages;
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &this->commandBuffers.getVkCommandBuffer(this->frameIndex);
+    const VkCommandBuffer commandBuffer = this->commandBuffers.getVkCommandBuffer(this->frameIndex);
+    submitInfo.pCommandBuffers = &commandBuffer;
     VkSemaphore signalSemaphores[] = {this->renderFinishedSemaphores[imageIndex]};
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
-    if (vkQueueSubmit(this->device.getGraphicsQueue(), 1, &submitInfo, this->framePresentedFences[this->frameIndex]) !=
-        VK_SUCCESS) {
+    if (vkQueueSubmit(this->device.getGraphicsVkQueue(), 1, &submitInfo,
+            this->framePresentedFences[this->frameIndex]) != VK_SUCCESS) {
         throw std::runtime_error("Failed to submit draw command buffer.");
     }
 
@@ -108,7 +107,7 @@ void VulkanEngine::draw() {
     presentInfo.pSwapchains = swapchains;
     presentInfo.pImageIndices = &imageIndex;
 
-    if (vkQueuePresentKHR(this->device.getPresentQueue(), &presentInfo) != VK_SUCCESS) {
+    if (vkQueuePresentKHR(this->device.getPresentVkQueue(), &presentInfo) != VK_SUCCESS) {
         throw std::runtime_error("Unable to present the image.");
     }
 

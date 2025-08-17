@@ -1,20 +1,18 @@
 #include "CommandBuffers.hpp"
-#include "CommandPool.hpp"
 #include "Pipeline.hpp"
 #include <stdexcept>
 #include <vulkan/vulkan_core.h>
 
-CommandBuffers::CommandBuffers(const Device &device, const Swapchain &swapchain, const Pipeline &pipeline,
-    const CommandPool &commandPool, uint32_t count)
+CommandBuffers::CommandBuffers(
+    const Device &device, const Swapchain &swapchain, const Pipeline &pipeline, uint32_t count)
     : device(device),
       swapchain(swapchain),
-      pipeline(pipeline),
-      commandPool(commandPool) {
+      pipeline(pipeline) {
     this->commandBuffers.resize(count);
 
     VkCommandBufferAllocateInfo allocateInfo{};
     allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocateInfo.commandPool = this->commandPool.getVkCommandPool();
+    allocateInfo.commandPool = this->device.getGraphicsVkCommandPool();
     allocateInfo.commandBufferCount = count;
     allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 
@@ -25,21 +23,19 @@ CommandBuffers::CommandBuffers(const Device &device, const Swapchain &swapchain,
 }
 
 CommandBuffers::~CommandBuffers() {
-    vkFreeCommandBuffers(this->device.getVkDevice(), this->commandPool.getVkCommandPool(), this->commandBuffers.size(),
-        this->commandBuffers.data());
+    vkFreeCommandBuffers(this->device.getVkDevice(), this->device.getGraphicsVkCommandPool(),
+        this->commandBuffers.size(), this->commandBuffers.data());
 }
 
-const VkCommandBuffer &CommandBuffers::getVkCommandBuffer(uint32_t index) const noexcept {
+VkCommandBuffer CommandBuffers::getVkCommandBuffer(uint32_t index) const noexcept {
     return this->commandBuffers[index];
 }
 
-void CommandBuffers::reset(uint32_t index) {
+void CommandBuffers::record(uint32_t index, VkFramebuffer framebuffer) {
     if (vkResetCommandBuffer(this->commandBuffers[index], 0) != VK_SUCCESS) {
         throw std::runtime_error("Failed to reset the command buffer.");
     }
-}
 
-void CommandBuffers::record(uint32_t index, VkFramebuffer framebuffer) {
     VkCommandBufferBeginInfo commandBufferInfo{};
     commandBufferInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 

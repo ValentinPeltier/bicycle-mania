@@ -11,7 +11,7 @@ class Instance {
     public:
         Instance();
         ~Instance();
-        const VkInstance &getVkInstance() const noexcept;
+        VkInstance getVkInstance() const noexcept;
 
     private:
         VkInstance instance = VK_NULL_HANDLE;

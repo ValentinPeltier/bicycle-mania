@@ -2,43 +2,55 @@
 
 #include "Instance.hpp"
 #include "Surface.hpp"
+#include <array>
 #include <cstdint>
 #include <optional>
 #include <vulkan/vulkan_core.h>
-
-struct QueueFamilyIndices {
-        std::optional<uint32_t> graphics;
-        std::optional<uint32_t> present;
-};
 
 class Device {
     public:
         Device(const Instance &instance, const Surface &surface);
         ~Device();
 
-        const VkDevice &getVkDevice() const noexcept;
-        const VkPhysicalDevice &getVkPhysicalDevice() const noexcept;
+        VkDevice getVkDevice() const noexcept;
+        VkPhysicalDevice getVkPhysicalDevice() const noexcept;
 
-        QueueFamilyIndices getQueueFamilyIndices() const;
-        VkQueue getGraphicsQueue() const noexcept;
-        VkQueue getPresentQueue() const noexcept;
+        // Queues
+        uint32_t getGraphicsQueueFamilyIndex() const noexcept;
+        uint32_t getPresentQueueFamilyIndex() const noexcept;
+        VkQueue getGraphicsVkQueue() const noexcept;
+        VkQueue getPresentVkQueue() const noexcept;
+
+        // Command pools
+        VkCommandPool getGraphicsVkCommandPool() const noexcept;
 
     private:
         const Instance &instance;
         const Surface &surface;
         VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
         VkDevice device = VK_NULL_HANDLE;
+
+        // Queues
+        uint32_t graphicsQueueFamilyIndex;
+        uint32_t presentQueueFamilyIndex;
         VkQueue graphicsQueue = VK_NULL_HANDLE;
         VkQueue presentQueue = VK_NULL_HANDLE;
 
-        const std::vector<const char *> requiredExtensions{
+        // Command pools
+        VkCommandPool graphicsCommandPool = VK_NULL_HANDLE;
+
+        // Extensions
+        const std::array<const char *, 1> requiredExtensions{
             VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         };
 
-        std::vector<VkPhysicalDevice> getPhysicalDevices() const;
+    private:
         VkPhysicalDevice getBestPhysicalDevice() const;
+        VkDevice createDevice() const;
+        VkCommandPool createGraphicsCommandPool() const;
+
         /**
-         * @return uint32_t `0` means that the physical device is not suitable for the engine.
+         * @return uint32_t `0` means that the physical device is not suitable.
          */
         uint32_t ratePhysicalDevice(VkPhysicalDevice physicalDevice) const noexcept;
         uint32_t rateQueueFamilies(VkPhysicalDevice physicalDevice) const;
@@ -47,6 +59,7 @@ class Device {
         std::vector<VkExtensionProperties> getAvailableExtensions(VkPhysicalDevice physicalDevice) const;
         std::vector<const char *> getExtensionsToUse(VkPhysicalDevice physicalDevice) const;
 
-        std::vector<VkDeviceQueueCreateInfo> getQueueCreateInfos(VkPhysicalDevice physicalDevice) const;
-        QueueFamilyIndices getQueueFamilyIndices(VkPhysicalDevice physicalDevice) const;
+        std::vector<VkQueueFamilyProperties> getQueueFamilies(VkPhysicalDevice physicalDevice) const;
+        std::optional<uint32_t> getGraphicsQueueFamilyIndex(VkPhysicalDevice physicalDevice) const;
+        std::optional<uint32_t> getPresentQueueFamilyIndex(VkPhysicalDevice physicalDevice) const;
 };
