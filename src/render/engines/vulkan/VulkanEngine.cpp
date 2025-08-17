@@ -70,7 +70,11 @@ void VulkanEngine::draw() {
         throw std::runtime_error("Failed to reset fence.");
     }
 
-    uint32_t imageIndex = this->swapchain.getNextImageIndex(this->imageAvailableSemaphores[this->frameIndex]);
+    uint32_t imageIndex;
+    if (vkAcquireNextImageKHR(this->device.getVkDevice(), this->swapchain.getVkSwapchain(), UINT64_MAX,
+            this->imageAvailableSemaphores[this->frameIndex], VK_NULL_HANDLE, &imageIndex) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to acquire next image.");
+    }
 
     // Record command buffer
     this->commandBuffers.reset(this->frameIndex);
@@ -104,7 +108,9 @@ void VulkanEngine::draw() {
     presentInfo.pSwapchains = swapchains;
     presentInfo.pImageIndices = &imageIndex;
 
-    vkQueuePresentKHR(this->device.getPresentQueue(), &presentInfo);
+    if (vkQueuePresentKHR(this->device.getPresentQueue(), &presentInfo) != VK_SUCCESS) {
+        throw std::runtime_error("Unable to present the image.");
+    }
 
     this->frameIndex = (this->frameIndex + 1) % this->MAX_FRAMES_WAITING;
 }

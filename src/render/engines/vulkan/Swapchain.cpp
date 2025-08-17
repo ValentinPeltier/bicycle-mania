@@ -1,10 +1,8 @@
 #include "Swapchain.hpp"
 #include "Device.hpp"
 #include "Surface.hpp"
-#include "core/Logger.hpp"
 #include <algorithm>
 #include <cstdint>
-#include <limits>
 #include <stdexcept>
 #include <vector>
 #include <vulkan/vulkan_core.h>
@@ -15,43 +13,13 @@ Swapchain::Swapchain(const Window &window, const Surface &surface, const Device 
       device(device) {
     SwapchainDetails details = Swapchain::getDetails(this->device.getVkPhysicalDevice(), this->surface);
     VkSurfaceFormatKHR surfaceFormat = this->chooseSurfaceFormat(details.formats);
-    VkPresentModeKHR presentMode = this->choosePresentMode(details.presentModes);
-    VkExtent2D extent = this->chooseExtent(details.capabilities);
-
-    VkSwapchainCreateInfoKHR createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    createInfo.surface = this->surface.getVkSurface();
-    createInfo.minImageCount = this->chooseImageCount(details.capabilities);
-    createInfo.imageFormat = surfaceFormat.format;
-    createInfo.imageColorSpace = surfaceFormat.colorSpace;
-    createInfo.imageExtent = extent;
-    createInfo.imageArrayLayers = 1;
-    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    createInfo.preTransform = details.capabilities.currentTransform;
-    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    createInfo.presentMode = presentMode;
-    createInfo.clipped = VK_TRUE;
-    createInfo.oldSwapchain = VK_NULL_HANDLE;
-
-    QueueFamilyIndices queueFamilyIndices = this->device.getQueueFamilyIndices();
-    if (queueFamilyIndices.graphics == queueFamilyIndices.present) {
-        createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    } else {
-        uint32_t queueFamilyIndicesArray[] = {
-            queueFamilyIndices.graphics.value(),
-            queueFamilyIndices.present.value(),
-        };
-        createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-        createInfo.queueFamilyIndexCount = 2;
-        createInfo.pQueueFamilyIndices = queueFamilyIndicesArray;
-    }
-
-    if (vkCreateSwapchainKHR(this->device.getVkDevice(), &createInfo, nullptr, &this->swapchain) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create the swapchain.");
-    }
 
     this->format = surfaceFormat.format;
-    this->extent = extent;
+    this->colorSpace = surfaceFormat.colorSpace;
+    this->extent = this->chooseExtent(details.capabilities);
+    this->presentMode = this->choosePresentMode(details.presentModes);
+
+    this->swapchain = this->createSwapchain(details.capabilities);
     this->images = this->fetchImages();
     this->imageViews = this->createImageViews();
     this->renderPass = this->createRenderPass();
@@ -80,15 +48,6 @@ const VkExtent2D &Swapchain::getExtent() const noexcept {
     return this->extent;
 }
 
-uint32_t Swapchain::getNextImageIndex(VkSemaphore signalSemaphore) const {
-    uint32_t imageIndex;
-    if (vkAcquireNextImageKHR(this->device.getVkDevice(), this->swapchain, UINT64_MAX, signalSemaphore, VK_NULL_HANDLE,
-            &imageIndex) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to acquire next image.");
-    }
-    return imageIndex;
-}
-
 VkFramebuffer Swapchain::getFramebuffer(uint32_t index) const {
     return this->framebuffers[index];
 }
@@ -115,6 +74,43 @@ uint32_t Swapchain::rate(VkPhysicalDevice physicalDevice, const Surface &surface
     }
 
     return 1;
+}
+
+VkSwapchainKHR Swapchain::createSwapchain(const VkSurfaceCapabilitiesKHR &capabilities) const {
+    VkSwapchainCreateInfoKHR createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    createInfo.surface = this->surface.getVkSurface();
+    createInfo.minImageCount = this->chooseImageCount(capabilities);
+    createInfo.imageFormat = this->format;
+    createInfo.imageColorSpace = this->colorSpace;
+    createInfo.imageExtent = this->extent;
+    createInfo.imageArrayLayers = 1;
+    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    createInfo.preTransform = capabilities.currentTransform;
+    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    createInfo.presentMode = this->presentMode;
+    createInfo.clipped = VK_TRUE;
+    createInfo.oldSwapchain = VK_NULL_HANDLE;
+
+    QueueFamilyIndices queueFamilyIndices = this->device.getQueueFamilyIndices();
+    if (queueFamilyIndices.graphics == queueFamilyIndices.present) {
+        createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    } else {
+        uint32_t queueFamilyIndicesArray[] = {
+            queueFamilyIndices.graphics.value(),
+            queueFamilyIndices.present.value(),
+        };
+        createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+        createInfo.queueFamilyIndexCount = 2;
+        createInfo.pQueueFamilyIndices = queueFamilyIndicesArray;
+    }
+
+    VkSwapchainKHR swapchain;
+    if (vkCreateSwapchainKHR(this->device.getVkDevice(), &createInfo, nullptr, &swapchain) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create the swapchain.");
+    }
+
+    return swapchain;
 }
 
 SwapchainDetails Swapchain::getDetails(VkPhysicalDevice physicalDevice, const Surface &surface) {
@@ -179,17 +175,22 @@ VkPresentModeKHR Swapchain::choosePresentMode(const std::vector<VkPresentModeKHR
 
 VkExtent2D Swapchain::chooseExtent(const VkSurfaceCapabilitiesKHR &capabilities) const {
     // If Vulkan already fixed the extent, just keep it
-    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+    if (capabilities.currentExtent.width != UINT32_MAX) {
         return capabilities.currentExtent;
     }
 
     // Otherwise, set it to the resolution of the window
-    return {
-        std::clamp(this->window.getFramebufferSize().width, capabilities.minImageExtent.width,
-            capabilities.maxImageExtent.width),
-        std::clamp(this->window.getFramebufferSize().height, capabilities.minImageExtent.height,
-            capabilities.maxImageExtent.height),
+    VkExtent2D extent = {
+        this->window.getFramebufferSize().width,
+        this->window.getFramebufferSize().height,
     };
+
+    if (extent.width < capabilities.minImageExtent.width || extent.width > capabilities.maxImageExtent.width ||
+        extent.height < capabilities.minImageExtent.height || extent.height > capabilities.maxImageExtent.height) {
+        throw std::runtime_error("Incompatible window size.");
+    }
+
+    return extent;
 }
 
 uint32_t Swapchain::chooseImageCount(const VkSurfaceCapabilitiesKHR &capabilities) const {
