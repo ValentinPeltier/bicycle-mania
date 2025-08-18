@@ -2,6 +2,7 @@
 #include "core/Logger.hpp"
 #include <GLFW/glfw3.h>
 #include <stdexcept>
+#include <vulkan/vulkan_core.h>
 
 Instance::Instance() {
     // Create a VkInstance
@@ -11,7 +12,7 @@ Instance::Instance() {
     applicationInfo.applicationVersion = VK_MAKE_VERSION(0, 1, 0);
     applicationInfo.pEngineName = "No Engine";
     applicationInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    applicationInfo.apiVersion = VK_API_VERSION_1_4;
+    applicationInfo.apiVersion = VK_API_VERSION_1_3;
 
     auto extensions = this->getExtensionsToUse();
     auto instanceLayers = this->getLayersToUse();

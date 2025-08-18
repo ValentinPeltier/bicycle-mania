@@ -12,7 +12,7 @@ class CommandBuffers {
 
         VkCommandBuffer getVkCommandBuffer(uint32_t index) const noexcept;
 
-        void record(uint32_t index, VkFramebuffer framebuffer);
+        void record(uint32_t index, uint32_t imageIndex);
 
     private:
         const Device &device;

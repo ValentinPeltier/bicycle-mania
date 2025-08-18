@@ -85,6 +85,11 @@ VkDevice Device::createDevice() const {
     // Get the extensions we want to use
     auto extensions = this->getExtensionsToUse(this->physicalDevice);
 
+    // Enable dynamic rendering
+    VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures{};
+    dynamicRenderingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
+    dynamicRenderingFeatures.dynamicRendering = VK_TRUE;
+
     // Create a VkDevice
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -93,6 +98,7 @@ VkDevice Device::createDevice() const {
     createInfo.pEnabledFeatures = &physicalDeviceFeatures;
     createInfo.enabledExtensionCount = extensions.size();
     createInfo.ppEnabledExtensionNames = extensions.data();
+    createInfo.pNext = &dynamicRenderingFeatures;
 
     VkDevice device;
     if (vkCreateDevice(this->physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {

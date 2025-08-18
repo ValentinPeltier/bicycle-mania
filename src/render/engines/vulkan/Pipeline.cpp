@@ -31,11 +31,11 @@ Pipeline::Pipeline(const Device &device, const Swapchain &swapchain)
     };
 
     // Set up dynamic states
-    VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+    std::array<VkDynamicState, 2> dynamicStates{VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
     VkPipelineDynamicStateCreateInfo dynamicStateInfo{};
     dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    dynamicStateInfo.dynamicStateCount = 2;
-    dynamicStateInfo.pDynamicStates = dynamicStates;
+    dynamicStateInfo.dynamicStateCount = dynamicStates.size();
+    dynamicStateInfo.pDynamicStates = dynamicStates.data();
 
     // Set up fixed states
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
@@ -86,6 +86,12 @@ Pipeline::Pipeline(const Device &device, const Swapchain &swapchain)
         throw std::runtime_error("Failed to create pipeline layout.");
     }
 
+    // Set rendering information
+    VkPipelineRenderingCreateInfo renderingInfo{};
+    renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+    renderingInfo.colorAttachmentCount = 1;
+    renderingInfo.pColorAttachmentFormats = &this->swapchain.getColorFormat();
+
     // Create pipeline
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -100,8 +106,8 @@ Pipeline::Pipeline(const Device &device, const Swapchain &swapchain)
     pipelineInfo.pColorBlendState = &colorBlendingInfo;
     pipelineInfo.pDynamicState = &dynamicStateInfo;
     pipelineInfo.layout = this->layout;
-    pipelineInfo.renderPass = this->swapchain.getVkRenderPass();
     pipelineInfo.subpass = 0;
+    pipelineInfo.pNext = &renderingInfo;
 
     if (vkCreateGraphicsPipelines(
             this->device.getVkDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &this->pipeline) != VK_SUCCESS) {

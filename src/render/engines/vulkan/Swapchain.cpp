@@ -15,7 +15,7 @@ Swapchain::Swapchain(const Window &window, const Surface &surface, const Device 
     SwapchainDetails details = Swapchain::getDetails(this->device.getVkPhysicalDevice(), this->surface);
     VkSurfaceFormatKHR surfaceFormat = this->chooseSurfaceFormat(details.formats);
 
-    this->format = surfaceFormat.format;
+    this->colorFormat = surfaceFormat.format;
     this->colorSpace = surfaceFormat.colorSpace;
     this->extent = this->chooseExtent(details.capabilities);
     this->presentMode = this->choosePresentMode(details.presentModes);
@@ -23,17 +23,9 @@ Swapchain::Swapchain(const Window &window, const Surface &surface, const Device 
     this->swapchain = this->createSwapchain(details.capabilities);
     this->images = this->fetchImages();
     this->imageViews = this->createImageViews();
-    this->renderPass = this->createRenderPass();
-    this->framebuffers = this->createFramebuffers();
 }
 
 Swapchain::~Swapchain() {
-    for (auto &framebuffer : this->framebuffers) {
-        vkDestroyFramebuffer(this->device.getVkDevice(), framebuffer, nullptr);
-    }
-
-    vkDestroyRenderPass(this->device.getVkDevice(), this->renderPass, nullptr);
-
     for (auto &imageView : this->imageViews) {
         vkDestroyImageView(this->device.getVkDevice(), imageView, nullptr);
     }
@@ -45,20 +37,24 @@ VkSwapchainKHR Swapchain::getVkSwapchain() const noexcept {
     return this->swapchain;
 }
 
+const VkFormat &Swapchain::getColorFormat() const noexcept {
+    return this->colorFormat;
+}
+
 const VkExtent2D &Swapchain::getExtent() const noexcept {
     return this->extent;
 }
 
-VkFramebuffer Swapchain::getVkFramebuffer(uint32_t index) const {
-    return this->framebuffers[index];
-}
-
-VkRenderPass Swapchain::getVkRenderPass() const noexcept {
-    return this->renderPass;
-}
-
 uint32_t Swapchain::getImageCount() const noexcept {
     return this->images.size();
+}
+
+VkImage Swapchain::getVkImage(uint32_t index) const {
+    return this->images[index];
+}
+
+VkImageView Swapchain::getVkImageView(uint32_t index) const {
+    return this->imageViews[index];
 }
 
 uint32_t Swapchain::rate(VkPhysicalDevice physicalDevice, const Surface &surface) {
@@ -82,7 +78,7 @@ VkSwapchainKHR Swapchain::createSwapchain(const VkSurfaceCapabilitiesKHR &capabi
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     createInfo.surface = this->surface.getVkSurface();
     createInfo.minImageCount = this->chooseImageCount(capabilities);
-    createInfo.imageFormat = this->format;
+    createInfo.imageFormat = this->colorFormat;
     createInfo.imageColorSpace = this->colorSpace;
     createInfo.imageExtent = this->extent;
     createInfo.imageArrayLayers = 1;
@@ -131,90 +127,22 @@ std::vector<VkImageView> Swapchain::createImageViews() const {
     subresourceRange.layerCount = 1;
 
     std::vector<VkImageView> imageViews(this->images.size());
-    for (uint32_t i = 0; i < this->images.size(); ++i) {
+    for (uint32_t imageIndex = 0; imageIndex < this->images.size(); ++imageIndex) {
         VkImageViewCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        createInfo.image = this->images[i];
+        createInfo.image = this->images[imageIndex];
         createInfo.viewType = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D;
-        createInfo.format = this->format;
+        createInfo.format = this->colorFormat;
         createInfo.components = components;
         createInfo.subresourceRange = subresourceRange;
 
-        if (vkCreateImageView(this->device.getVkDevice(), &createInfo, nullptr, &imageViews[i]) != VK_SUCCESS) {
+        if (vkCreateImageView(this->device.getVkDevice(), &createInfo, nullptr, &imageViews[imageIndex]) !=
+            VK_SUCCESS) {
             throw std::runtime_error("Failed to create image view.");
         }
     }
 
     return imageViews;
-}
-
-VkRenderPass Swapchain::createRenderPass() const {
-    VkAttachmentDescription colorAttachment{};
-    colorAttachment.format = this->format;
-    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-    VkAttachmentReference colorAttachmentReference{};
-    colorAttachmentReference.attachment = 0;
-    colorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkSubpassDescription subpass{};
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &colorAttachmentReference;
-    VkSubpassDependency subpassDependency{};
-    subpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    subpassDependency.dstSubpass = 0;
-    subpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    subpassDependency.srcAccessMask = 0;
-    subpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    subpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-    VkRenderPassCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    createInfo.attachmentCount = 1;
-    createInfo.pAttachments = &colorAttachment;
-    createInfo.subpassCount = 1;
-    createInfo.pSubpasses = &subpass;
-    createInfo.dependencyCount = 1;
-    createInfo.pDependencies = &subpassDependency;
-
-    VkRenderPass renderPass = VK_NULL_HANDLE;
-    if (vkCreateRenderPass(this->device.getVkDevice(), &createInfo, nullptr, &renderPass) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create render pass.");
-    }
-
-    return renderPass;
-}
-
-std::vector<VkFramebuffer> Swapchain::createFramebuffers() const {
-    std::vector<VkFramebuffer> framebuffers(this->imageViews.size());
-
-    for (uint32_t i = 0; i < this->imageViews.size(); i++) {
-        std::vector<VkImageView> attachments{
-            this->imageViews[i],
-        };
-
-        VkFramebufferCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        createInfo.renderPass = this->renderPass;
-        createInfo.attachmentCount = attachments.size();
-        createInfo.pAttachments = attachments.data();
-        createInfo.width = this->extent.width;
-        createInfo.height = this->extent.height;
-        createInfo.layers = 1;
-
-        if (vkCreateFramebuffer(this->device.getVkDevice(), &createInfo, nullptr, &framebuffers[i]) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create the framebuffers.");
-        }
-    }
-
-    return framebuffers;
 }
 
 SwapchainDetails Swapchain::getDetails(VkPhysicalDevice physicalDevice, const Surface &surface) {

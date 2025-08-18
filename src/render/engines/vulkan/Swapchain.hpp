@@ -20,10 +20,11 @@ class Swapchain {
         ~Swapchain();
 
         VkSwapchainKHR getVkSwapchain() const noexcept;
+        const VkFormat &getColorFormat() const noexcept;
         const VkExtent2D &getExtent() const noexcept;
-        VkFramebuffer getVkFramebuffer(uint32_t index) const;
-        VkRenderPass getVkRenderPass() const noexcept;
         uint32_t getImageCount() const noexcept;
+        VkImage getVkImage(uint32_t index) const;
+        VkImageView getVkImageView(uint32_t index) const;
 
         static uint32_t rate(VkPhysicalDevice physicalDevice, const Surface &surface);
 
@@ -32,7 +33,7 @@ class Swapchain {
         const Surface &surface;
         const Device &device;
 
-        VkFormat format{};
+        VkFormat colorFormat{};
         VkColorSpaceKHR colorSpace;
         VkExtent2D extent{};
         VkPresentModeKHR presentMode;
@@ -40,14 +41,10 @@ class Swapchain {
         VkSwapchainKHR swapchain = VK_NULL_HANDLE;
         std::vector<VkImage> images{};
         std::vector<VkImageView> imageViews{};
-        VkRenderPass renderPass = VK_NULL_HANDLE;
-        std::vector<VkFramebuffer> framebuffers{};
 
     private:
         VkSwapchainKHR createSwapchain(const VkSurfaceCapabilitiesKHR &capabilities) const;
         std::vector<VkImageView> createImageViews() const;
-        VkRenderPass createRenderPass() const;
-        std::vector<VkFramebuffer> createFramebuffers() const;
 
         static SwapchainDetails getDetails(VkPhysicalDevice physicalDevice, const Surface &surface);
 

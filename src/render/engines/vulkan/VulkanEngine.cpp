@@ -76,7 +76,7 @@ void VulkanEngine::draw() {
     }
 
     // Record command buffer
-    this->commandBuffers.record(this->frameIndex, this->swapchain.getVkFramebuffer(imageIndex));
+    this->commandBuffers.record(this->frameIndex, imageIndex);
 
     // Submit draw command buffer
     VkSubmitInfo submitInfo{};
@@ -102,9 +102,9 @@ void VulkanEngine::draw() {
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;
     presentInfo.pWaitSemaphores = signalSemaphores;
-    VkSwapchainKHR swapchains[] = {this->swapchain.getVkSwapchain()};
+    VkSwapchainKHR swapchain = this->swapchain.getVkSwapchain();
     presentInfo.swapchainCount = 1;
-    presentInfo.pSwapchains = swapchains;
+    presentInfo.pSwapchains = &swapchain;
     presentInfo.pImageIndices = &imageIndex;
 
     if (vkQueuePresentKHR(this->device.getPresentVkQueue(), &presentInfo) != VK_SUCCESS) {
